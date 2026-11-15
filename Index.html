@@ -293,20 +293,48 @@
     </div>
 
     <!-- Close Account Modal (FDR/DPS) -->
-    <div id="closeAccountModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300" id="closeAccountModalContent">
-            <h3 class="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Close Account</h3>
-            <p class="text-sm text-gray-700 mb-6">Are you sure you want to close this account?</p>
-            
-            <div class="space-y-3 mb-6 text-sm text-gray-700">
-                <div class="flex justify-between"><span class="font-medium text-gray-500">Opening Date:</span> <span id="caDate" class="font-bold text-gray-900"></span></div>
-                <div class="flex justify-between"><span class="font-medium text-gray-500">Customer Name:</span> <span id="caName" class="font-bold text-gray-900"></span></div>
-                <div class="flex justify-between"><span class="font-medium text-gray-500">Account No:</span> <span id="caAccount" class="font-bold text-gray-900"></span></div>
-                <div class="flex justify-between"><span class="font-medium text-gray-500">Linked A/C:</span> <span id="caLinkedAccount" class="font-bold text-gray-900"></span></div>
+    <div id="closeAccountModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]" id="closeAccountModalContent">
+            <div class="p-6 overflow-y-auto">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Account Details & Calculator</h3>
+                
+                <div class="space-y-2 mb-4 text-sm text-gray-700">
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Opening Date:</span> <span id="caDate" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Customer Name:</span> <span id="caName" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Account No:</span> <span id="caAccount" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Linked A/C:</span> <span id="caLinkedAccount" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Amount:</span> <span id="caAmount" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between"><span class="font-medium text-gray-500">Period:</span> <span id="caPeriod" class="font-bold text-gray-900"></span></div>
+                </div>
+
+                <!-- Calculator Section -->
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-ucbred" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        Maturity Calculator
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Interest Rate (%)</label>
+                            <input type="number" id="caInterestRate" placeholder="e.g. 8.5" step="0.01" class="w-full border border-gray-300 rounded text-sm px-2 py-1.5 outline-none focus:border-ucbred transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Tax (TIN Status)</label>
+                            <select id="caTinStatus" class="w-full border border-gray-300 rounded text-sm px-2 py-1.5 outline-none focus:border-ucbred bg-white transition">
+                                <option value="10">With TIN (10%)</option>
+                                <option value="15">Without TIN (15%)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="caCalcResult" class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 hidden">
+                        <!-- Results injected via JS -->
+                    </div>
+                </div>
             </div>
 
-            <div class="flex justify-end space-x-3 border-t border-gray-100 pt-4">
-                <button id="cancelCloseBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">Cancel</button>
+            <div class="p-4 flex justify-between space-x-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                <button id="cancelCloseBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-md transition">Cancel</button>
                 <button id="confirmCloseBtn" class="px-4 py-2 text-sm font-medium text-white bg-ucbred hover:bg-ucbred-dark rounded-md transition shadow-sm">Confirm Close</button>
             </div>
         </div>
@@ -1245,12 +1273,68 @@
             document.getElementById('caName').textContent = accountToClose.customer;
             document.getElementById('caAccount').textContent = accountToClose.id;
             document.getElementById('caLinkedAccount').textContent = accountToClose.linkedAccount || 'N/A';
+            document.getElementById('caAmount').textContent = accountToClose.amount;
+            document.getElementById('caPeriod').textContent = accountToClose.period;
+            
+            // Reset Calculator
+            document.getElementById('caInterestRate').value = '';
+            document.getElementById('caTinStatus').value = '10';
+            document.getElementById('caCalcResult').classList.add('hidden');
             
             closeAccountModal.classList.remove('opacity-0', 'pointer-events-none');
             closeAccountModalContent.classList.remove('scale-95');
             closeAccountModalContent.classList.add('scale-100');
             document.body.classList.add('menu-open'); // lock scroll
         }
+
+        // --- Calculator Logic ---
+        function calculateMaturity() {
+            if (!accountToClose) return;
+            const rateInput = document.getElementById('caInterestRate').value;
+            const rate = parseFloat(rateInput);
+            const tinRate = parseFloat(document.getElementById('caTinStatus').value) / 100;
+            const resultDiv = document.getElementById('caCalcResult');
+
+            if (isNaN(rate) || rate <= 0) {
+                resultDiv.classList.add('hidden');
+                return;
+            }
+
+            let amount = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
+            let months = parseInt(accountToClose.totalMonths) || 0;
+
+            let principal = 0;
+            let grossInterest = 0;
+
+            if (accountToClose.type === 'FDR') {
+                principal = amount;
+                // Standard FDR Simple Interest in Bangladesh: (Principal * Rate * Months) / 1200
+                grossInterest = (principal * rate * months) / 1200;
+            } else if (accountToClose.type === 'DPS') {
+                principal = amount * months;
+                // Standard DPS Formula: (Monthly * Rate * n * (n+1)) / 2400
+                grossInterest = (amount * rate * months * (months + 1)) / 2400;
+            }
+
+            let taxAmount = grossInterest * tinRate;
+            let netInterest = grossInterest - taxAmount;
+            let totalPayable = principal + netInterest;
+
+            const formatCurrency = (num) => '৳ ' + Math.round(num).toLocaleString('en-IN');
+
+            resultDiv.innerHTML = `
+                <div class="flex justify-between mb-1"><span>Total Principal:</span> <span class="font-medium">${formatCurrency(principal)}</span></div>
+                <div class="flex justify-between mb-1"><span>Gross Interest:</span> <span class="font-medium">${formatCurrency(grossInterest)}</span></div>
+                <div class="flex justify-between mb-1 text-red-600"><span>Tax Deduction:</span> <span>-${formatCurrency(taxAmount)}</span></div>
+                <div class="flex justify-between border-t border-gray-200 mt-2 pt-2 font-bold text-ucbred text-base">
+                    <span>Total Payable:</span> <span>${formatCurrency(totalPayable)}</span>
+                </div>
+            `;
+            resultDiv.classList.remove('hidden');
+        }
+
+        document.getElementById('caInterestRate').addEventListener('input', calculateMaturity);
+        document.getElementById('caTinStatus').addEventListener('change', calculateMaturity);
 
         function closeCloseAccountModal() {
             closeAccountModal.classList.add('opacity-0', 'pointer-events-none');
