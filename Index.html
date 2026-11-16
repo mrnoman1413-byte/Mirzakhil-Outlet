@@ -639,6 +639,20 @@
                 if (acc.openDate) acc.openDate = formatIsoDate(acc.openDate);
                 if (acc.closeDate) acc.closeDate = formatIsoDate(acc.closeDate);
                 
+                // Ensure IDs and Linked Accounts are strings and clean up any prefixed apostrophes
+                if (acc.id !== undefined) acc.id = String(acc.id).replace(/^'/, '');
+                if (acc.customerId !== undefined) acc.customerId = String(acc.customerId).replace(/^'/, '');
+                if (acc.linkedAccount !== undefined) acc.linkedAccount = String(acc.linkedAccount).replace(/^'/, '');
+
+                // Auto-fix Mobile Numbers (Add leading zero if missing for 10-digit BD numbers)
+                if (acc.mobile !== undefined) {
+                    let mobStr = String(acc.mobile).replace(/^'/, '').trim();
+                    if (mobStr.length === 10 && !mobStr.startsWith('0')) {
+                        mobStr = '0' + mobStr;
+                    }
+                    acc.mobile = mobStr;
+                }
+
                 // Auto-fill missing background data for manual sheet entries
                 if (type === 'FDR' || type === 'DPS') {
                     if (!acc.totalMonths && acc.period) acc.totalMonths = calcMonths(acc.period);
@@ -1588,15 +1602,16 @@
             }
 
             // Generate New Account Object
+            // Prefixing ID and Mobile with apostrophe (') ensures Google Sheets treats them as pure text, preventing scientific notation and dropping zeros
             const newAcc = {
-                id: document.getElementById('naNumber').value,
+                id: "'" + document.getElementById('naNumber').value,
                 openDate: displayDate,
                 customer: document.getElementById('naName').value,
-                mobile: document.getElementById('naMobile').value,
-                customerId: document.getElementById('naCustomerId').value,
+                mobile: "'" + document.getElementById('naMobile').value,
+                customerId: document.getElementById('naCustomerId').value ? "'" + document.getElementById('naCustomerId').value : '',
                 amount: document.getElementById('naAmount').value,
                 period: formattedPeriod,
-                linkedAccount: document.getElementById('naLinkedAccount').value,
+                linkedAccount: document.getElementById('naLinkedAccount').value ? "'" + document.getElementById('naLinkedAccount').value : '',
                 monthsPaid: mPaid,
                 totalMonths: totalM,
                 status: document.getElementById('naStatus').value,
@@ -1604,15 +1619,22 @@
                 hasImo: document.getElementById('naHasImo').checked
             };
             
+            // For local immediate display, strip the apostrophes so it looks clean
+            const localAcc = {...newAcc};
+            localAcc.id = localAcc.id.replace(/^'/, '');
+            localAcc.mobile = localAcc.mobile.replace(/^'/, '');
+            if (localAcc.customerId) localAcc.customerId = localAcc.customerId.replace(/^'/, '');
+            if (localAcc.linkedAccount) localAcc.linkedAccount = localAcc.linkedAccount.replace(/^'/, '');
+            
             // Append data locally immediately
             if (type === 'savings') {
-                savingsAccounts.unshift(newAcc);
+                savingsAccounts.unshift(localAcc);
             } else if (type === 'cdsnd') {
-                cdSndAccounts.unshift(newAcc);
+                cdSndAccounts.unshift(localAcc);
             } else if (type === 'fdr') {
-                fdrDpsAccounts.unshift({...newAcc, type: 'FDR', status: 'Active'});
+                fdrDpsAccounts.unshift({...localAcc, type: 'FDR', status: 'Active'});
             } else if (type === 'dps') {
-                fdrDpsAccounts.unshift({...newAcc, type: 'DPS', status: 'Active'});
+                fdrDpsAccounts.unshift({...localAcc, type: 'DPS', status: 'Active'});
             }
 
             updateDashboardUI(); // Update all counters and totals dynamically
