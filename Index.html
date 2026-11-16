@@ -50,6 +50,34 @@
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased transition-all duration-300">
 
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-gray-50 z-[100] flex flex-col items-center justify-center">
+        <div class="max-w-sm w-full p-8 bg-white rounded-xl shadow-2xl border border-gray-100 mx-4">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-ucbred rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                    <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Mirzakhil Outlet</h2>
+                <p class="text-gray-500 text-sm mt-1">Please login to access dashboard</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">UID</label>
+                    <input type="text" id="loginUid" required class="w-full border border-gray-300 rounded-md px-4 py-2 outline-none focus:border-ucbred focus:ring-1 focus:ring-ucbred transition bg-gray-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="loginPass" required class="w-full border border-gray-300 rounded-md px-4 py-2 outline-none focus:border-ucbred focus:ring-1 focus:ring-ucbred transition bg-gray-50 focus:bg-white">
+                </div>
+                <button type="submit" id="loginBtn" class="w-full bg-ucbred hover:bg-ucbred-dark text-white font-bold py-2.5 rounded-md transition shadow-md flex justify-center items-center mt-2">
+                    <span>Login</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-ucbred text-white shadow-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -202,11 +230,11 @@
         <!-- Profile Area -->
         <div class="bg-ucbred p-6 flex items-center justify-between">
             <div class="flex items-center">
-                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-ucbred font-bold text-xl shadow-inner">
+                <div id="sidebarUserInitials" class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-ucbred font-bold text-xl shadow-inner">
                     MO
                 </div>
                 <div class="ml-4 text-white">
-                    <h3 class="font-bold text-lg leading-tight">Mirzakhil Admin</h3>
+                    <h3 id="sidebarUserName" class="font-bold text-lg leading-tight">Mirzakhil Admin</h3>
                     <p class="text-red-200 text-sm">Manager Profile</p>
                 </div>
             </div>
@@ -254,7 +282,7 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Install App
             </button>
-            <button onclick="showToast('Logout - Coming Soon')" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
+            <button onclick="logout()" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 Sign Out
             </button>
@@ -1659,7 +1687,79 @@
             setInterval(() => syncData(true), 30000);
         }
 
-        initializeApp();
+        // --- Login System Logic ---
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const sidebarUserName = document.getElementById('sidebarUserName');
+        const sidebarUserInitials = document.getElementById('sidebarUserInitials');
+
+        function setLoggedInUI(name) {
+            sidebarUserName.textContent = name;
+            let initials = name.substring(0, 2).toUpperCase();
+            if(name.includes(' ')) {
+                const parts = name.split(' ');
+                initials = parts[0][0] + (parts[1] ? parts[1][0] : '');
+            }
+            sidebarUserInitials.textContent = initials.toUpperCase();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('mirzakhilUser');
+            location.reload(); // Instantly pushes them back to login screen
+        }
+
+        // Check if already logged in
+        const loggedInUser = sessionStorage.getItem('mirzakhilUser');
+        if (loggedInUser) {
+            const userData = JSON.parse(loggedInUser);
+            setLoggedInUI(userData.name);
+            loginOverlay.classList.add('hidden');
+            initializeApp();
+        } else {
+            // Not logged in! Stop loading data and show overlay
+            loginOverlay.classList.remove('hidden');
+        }
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const uid = document.getElementById('loginUid').value.trim();
+                const pass = document.getElementById('loginPass').value.trim();
+                
+                loginBtn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3 text-white inline-block" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Checking...`;
+                loginBtn.disabled = true;
+
+                try {
+                    const response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                    const data = await response.json();
+                    
+                    const users = data.users || [];
+                    const user = users.find(u => String(u.uid) === uid && String(u.pass) === pass);
+                    
+                    if (user) {
+                        if (String(user.status).toLowerCase() === 'blocked') {
+                            showToast('This account has been Blocked!', 'error');
+                        } else {
+                            sessionStorage.setItem('mirzakhilUser', JSON.stringify({name: user.name, uid: user.uid}));
+                            setLoggedInUI(user.name);
+                            loginOverlay.classList.add('hidden');
+                            showToast('Login Successful!', 'success');
+                            
+                            initializeApp(); // Automatically syncs data and starts the background loader
+                        }
+                    } else {
+                        showToast('Invalid UID or Password!', 'error');
+                    }
+                } catch (err) {
+                    console.error("Login Error:", err);
+                    showToast('Network error! Check URL.', 'error');
+                }
+                
+                loginBtn.innerHTML = `<span>Login</span>`;
+                loginBtn.disabled = false;
+            });
+        }
 
     </script>
 </body>
