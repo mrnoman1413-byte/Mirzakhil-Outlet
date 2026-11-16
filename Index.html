@@ -290,7 +290,7 @@
     </aside>
 
     <!-- Custom Toast Notification (Replaces native alerts) -->
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center">
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-[200] flex items-center">
         <svg id="toastIconSvg" class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="toastIcon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         <span id="toastMessage" class="font-medium">Coming Soon!</span>
     </div>
@@ -1511,6 +1511,10 @@
                         div.innerHTML = `<span class="font-bold text-gray-800">${acc.id}</span> - <span class="text-gray-600">${acc.customer}</span>`;
                         div.onclick = () => {
                             naLinkedAccount.value = acc.id;
+                            // Auto-fill Name and Mobile number
+                            document.getElementById('naName').value = acc.customer || '';
+                            document.getElementById('naMobile').value = acc.mobile || '';
+                            
                             naLinkedAccountResults.classList.add('hidden');
                         };
                         naLinkedAccountResults.appendChild(div);
@@ -1734,22 +1738,26 @@
                     const response = await fetch(GOOGLE_APP_SCRIPT_URL);
                     const data = await response.json();
                     
-                    const users = data.users || [];
-                    const user = users.find(u => String(u.uid) === uid && String(u.pass) === pass);
-                    
-                    if (user) {
-                        if (String(user.status).toLowerCase() === 'blocked') {
-                            showToast('This account has been Blocked!', 'error');
+                    if (data && !data.status) { // Checking if the response is valid sheet data
+                        const users = data.users || [];
+                        const user = users.find(u => String(u.uid) === uid && String(u.pass) === pass);
+                        
+                        if (user) {
+                            if (String(user.status).toLowerCase() === 'blocked') {
+                                showToast('This account has been Blocked!', 'error');
+                            } else {
+                                sessionStorage.setItem('mirzakhilUser', JSON.stringify({name: user.name, uid: user.uid}));
+                                setLoggedInUI(user.name);
+                                loginOverlay.classList.add('hidden');
+                                showToast('Login Successful!', 'success');
+                                
+                                initializeApp(); // Automatically syncs data and starts the background loader
+                            }
                         } else {
-                            sessionStorage.setItem('mirzakhilUser', JSON.stringify({name: user.name, uid: user.uid}));
-                            setLoggedInUI(user.name);
-                            loginOverlay.classList.add('hidden');
-                            showToast('Login Successful!', 'success');
-                            
-                            initializeApp(); // Automatically syncs data and starts the background loader
+                            showToast('Invalid UID or Password!', 'error');
                         }
                     } else {
-                        showToast('Invalid UID or Password!', 'error');
+                         showToast('Error connecting to database!', 'error');
                     }
                 } catch (err) {
                     console.error("Login Error:", err);
