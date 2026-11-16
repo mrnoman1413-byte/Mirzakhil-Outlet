@@ -334,6 +334,7 @@
                 
                 <div class="space-y-2 mb-4 text-sm text-gray-700">
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Opening Date:</span> <span id="caDate" class="font-bold text-gray-900"></span></div>
+                    <div class="flex justify-between items-center"><span class="font-medium text-gray-500">Closing Date:</span> <input type="date" id="caCloseDate" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 outline-none focus:border-ucbred bg-white shadow-sm"></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Customer Name:</span> <span id="caName" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Account No:</span> <span id="caAccount" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Linked A/C:</span> <span id="caLinkedAccount" class="font-bold text-gray-900"></span></div>
@@ -988,9 +989,9 @@
                     const tr = document.createElement('tr');
                     
                     let isClosed = acc.status === 'Closed';
-                    tr.className = isClosed ? "bg-gray-50 opacity-80 transition" : "hover:bg-gray-50 transition cursor-pointer";
-                    tr.title = isClosed ? "Account Closed" : "Click to close this account";
-                    tr.onclick = () => { if(!isClosed) openCloseAccountModal(acc.id); };
+                    tr.className = isClosed ? "bg-gray-50 opacity-80 transition cursor-pointer" : "hover:bg-gray-50 transition cursor-pointer";
+                    tr.title = isClosed ? "Click to view details" : "Click to close this account";
+                    tr.onclick = () => { openCloseAccountModal(acc.id); };
                     
                     let remainingMonths = acc.totalMonths - acc.monthsPaid;
                     let years = Math.floor(remainingMonths / 12);
@@ -1337,11 +1338,60 @@
         const confirmCloseBtn = document.getElementById('confirmCloseBtn');
         let accountToClose = null;
 
+        function getCalculatedMonths() {
+            if (!accountToClose) return 0;
+            let closeDateVal = document.getElementById('caCloseDate').value;
+            let closeD = closeDateVal ? new Date(closeDateVal) : new Date();
+            let openD = parseActionDate(accountToClose.openDate);
+            let mPassed = (closeD.getFullYear() - openD.getFullYear()) * 12 + (closeD.getMonth() - openD.getMonth());
+            if (closeD.getDate() < openD.getDate()) mPassed--;
+            return Math.max(0, mPassed);
+        }
+
+        function updateModalDynamicInfo() {
+            if (!accountToClose) return;
+            let months = getCalculatedMonths();
+            if (accountToClose.type === 'DPS') {
+                let amt = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
+                document.getElementById('caMonthsPaid').textContent = months + ' Months';
+                document.getElementById('caTotalDeposited').textContent = '৳ ' + (months * amt).toLocaleString('en-IN');
+            }
+        }
+
+        document.getElementById('caCloseDate').addEventListener('change', () => {
+            updateModalDynamicInfo();
+            calculateMaturity();
+        });
+
         function openCloseAccountModal(id) {
             accountToClose = fdrDpsAccounts.find(a => String(a.id) === String(id));
             if(!accountToClose) return;
             
             document.getElementById('caDate').textContent = accountToClose.openDate;
+
+            const caCloseDateInput = document.getElementById('caCloseDate');
+            if (accountToClose.status === 'Closed' && accountToClose.closeDate) {
+                const parts = accountToClose.closeDate.split('-');
+                if(parts.length === 3) caCloseDateInput.value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                
+                // Lock the date picker if account is already closed
+                caCloseDateInput.disabled = true;
+                caCloseDateInput.classList.add('bg-gray-100', 'cursor-not-allowed', 'text-gray-500');
+                
+                document.getElementById('confirmCloseBtn').classList.add('hidden');
+                document.getElementById('cancelCloseBtn').textContent = 'Close';
+            } else {
+                const d = new Date();
+                caCloseDateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                
+                // Unlock the date picker for active accounts
+                caCloseDateInput.disabled = false;
+                caCloseDateInput.classList.remove('bg-gray-100', 'cursor-not-allowed', 'text-gray-500');
+                
+                document.getElementById('confirmCloseBtn').classList.remove('hidden');
+                document.getElementById('cancelCloseBtn').textContent = 'Cancel';
+            }
+            
             document.getElementById('caName').textContent = accountToClose.customer;
             document.getElementById('caAccount').textContent = accountToClose.id;
             document.getElementById('caLinkedAccount').textContent = accountToClose.linkedAccount || 'N/A';
@@ -1350,14 +1400,12 @@
             
             const dpsInfoBlock = document.getElementById('caDpsInfo');
             if (accountToClose.type === 'DPS') {
-                let mPaid = parseInt(accountToClose.monthsPaid) || 0;
-                let amt = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
-                document.getElementById('caMonthsPaid').textContent = mPaid + ' Months';
-                document.getElementById('caTotalDeposited').textContent = '৳ ' + (mPaid * amt).toLocaleString('en-IN');
                 if(dpsInfoBlock) { dpsInfoBlock.classList.remove('hidden'); dpsInfoBlock.classList.add('flex'); }
             } else {
                 if(dpsInfoBlock) { dpsInfoBlock.classList.add('hidden'); dpsInfoBlock.classList.remove('flex'); }
             }
+            
+            updateModalDynamicInfo();
             
             // Reset Calculator
             document.getElementById('caInterestRate').value = '';
@@ -1384,7 +1432,7 @@
             }
 
             let amount = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
-            let months = parseInt(accountToClose.totalMonths) || 0;
+            let months = getCalculatedMonths();
 
             let principal = 0;
             let grossInterest = 0;
@@ -1434,11 +1482,10 @@
                 let acc = fdrDpsAccounts.find(a => String(a.id) === String(accountToClose.id));
                 if (acc) {
                     acc.status = 'Closed';
-                    const d = new Date();
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    const yyyy = d.getFullYear();
-                    acc.closeDate = `${dd}-${mm}-${yyyy}`;
+                    let closeDateVal = document.getElementById('caCloseDate').value;
+                    let parts = closeDateVal.split('-');
+                    acc.closeDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    acc.monthsPaid = getCalculatedMonths();
                     acc.isPending = false;
                     saveToLocal("fdrDps", fdrDpsAccounts);
                     
