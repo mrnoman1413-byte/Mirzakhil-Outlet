@@ -1112,6 +1112,7 @@
                 if (isNaN(eventDate.getTime())) return;
 
                 let isMaturedDps = false;
+                let overdueCount = 0; // Track how many months are due
 
                 if (acc.type === 'DPS') {
                     let mPaid = parseInt(acc.monthsPaid) || 0;
@@ -1122,6 +1123,19 @@
                         eventDate.setMonth(eventDate.getMonth() + totalM);
                     } else {
                         eventDate.setMonth(eventDate.getMonth() + mPaid);
+                        
+                        // Calculate total pending installments (months due)
+                        let tempDue = new Date(eventDate);
+                        while (true) {
+                            let diff = Math.ceil((tempDue - today) / (1000 * 60 * 60 * 24));
+                            if (diff <= 5) { // If it's in the past or within 5 days
+                                overdueCount++;
+                                tempDue.setMonth(tempDue.getMonth() + 1);
+                                if (overdueCount > 1200) break; // failsafe
+                            } else {
+                                break;
+                            }
+                        }
                     }
                 } else if (acc.type === 'FDR') {
                     let mPaid = parseInt(acc.monthsPaid) || 0;
@@ -1133,12 +1147,18 @@
 
                 const daysDiff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
                 
-                // Show items within the next 5 days, and automatically hide them if they are more than 5 days overdue
-                if (daysDiff <= 5 && daysDiff >= -5) {
+                // Show items within the next 5 days, OR if they are overdue (daysDiff <= 5 includes negative/overdue days)
+                if (daysDiff <= 5) {
+                    let actStatus = (acc.type === 'FDR' || isMaturedDps) ? 'Maturity' : 'Installment Due';
+                    if (overdueCount > 1 && !isMaturedDps) {
+                        actStatus = `${overdueCount} Months Due`;
+                    }
+
                     visibleAccounts.push({
                         ...acc,
                         eventDate: eventDate,
-                        actionStatus: (acc.type === 'FDR' || isMaturedDps) ? 'Maturity' : 'Installment Due'
+                        actionStatus: actStatus,
+                        overdueCount: overdueCount
                     });
                 }
             });
@@ -1172,7 +1192,12 @@
                 if (account.type === 'FDR') {
                     amountDisplay = `Total: ${account.amount}`;
                 } else if (account.type === 'DPS') {
-                    amountDisplay = `Monthly: ${account.amount}`;
+                    let amt = parseFloat(String(account.amount).replace(/[^0-9.]/g, '')) || 0;
+                    if (account.overdueCount > 1) {
+                        amountDisplay = `<span class="text-ucbred font-bold">Due: ৳ ${(amt * account.overdueCount).toLocaleString('en-IN')} (${account.overdueCount} x ${account.amount})</span>`;
+                    } else {
+                        amountDisplay = `Monthly: ${account.amount}`;
+                    }
                 }
 
                 const card = `
@@ -1189,7 +1214,7 @@
                             </div>
                             <div class="text-xs text-gray-500 mt-1 flex justify-between">
                                 <span>A/C: ${account.id}</span>
-                                <span class="font-medium text-gray-700">${amountDisplay} (${account.period})</span>
+                                <span class="font-medium text-gray-700">${amountDisplay}</span>
                             </div>
                             <div class="flex items-center justify-between mt-2">
                                 <div class="text-xs font-medium ${account.isPending ? 'text-yellow-700' : 'text-ucbred'}">
@@ -1225,6 +1250,7 @@
             // Recalculate event date for the modal
             let eventDate = parseActionDate(acc.openDate);
             let isMaturedDps = false;
+            let overdueCount = 0; 
 
             if (acc.type === 'DPS') {
                 let mPaid = parseInt(acc.monthsPaid) || 0;
@@ -1234,6 +1260,17 @@
                     eventDate.setMonth(eventDate.getMonth() + totalM);
                 } else {
                     eventDate.setMonth(eventDate.getMonth() + mPaid);
+                    
+                    let tempDue = new Date(eventDate);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    while (true) {
+                        let diff = Math.ceil((tempDue - today) / 86400000);
+                        if (diff <= 5) {
+                            overdueCount++;
+                            tempDue.setMonth(tempDue.getMonth() + 1);
+                        } else break;
+                    }
                 }
             } else if (acc.type === 'FDR') {
                 let mPaid = parseInt(acc.monthsPaid) || 0;
@@ -1249,7 +1286,14 @@
             document.getElementById('amName').textContent = currentActionAccount.customer;
             document.getElementById('amAccount').textContent = currentActionAccount.id;
             document.getElementById('amMobile').textContent = currentActionAccount.mobile;
-            document.getElementById('amAmount').textContent = currentActionAccount.amount;
+            
+            let displayAmount = currentActionAccount.amount;
+            if (currentActionAccount.type === 'DPS' && overdueCount > 1) {
+                let amt = parseFloat(String(currentActionAccount.amount).replace(/[^0-9.]/g, '')) || 0;
+                displayAmount = `৳ ${(amt * overdueCount).toLocaleString('en-IN')} (${overdueCount} Months Due)`;
+            }
+            document.getElementById('amAmount').textContent = displayAmount;
+            
             document.getElementById('amPeriod').textContent = currentActionAccount.period;
             
             const today = new Date();
