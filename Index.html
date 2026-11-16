@@ -107,7 +107,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-8">
         
         <!-- Dashboard View -->
         <div id="dashboardView">
@@ -183,8 +183,14 @@
                     </button>
                     <h1 id="accountListTitle" class="text-3xl font-bold text-gray-900">Savings</h1>
                 </div>
-                <div id="accountListTotal" class="text-base sm:text-lg font-bold text-ucbred bg-red-50 border border-red-100 px-4 py-1.5 rounded-lg shadow-sm">
-                    Total - 0
+                <div class="flex items-center space-x-3">
+                    <button id="sortListBtn" class="flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-md hover:bg-gray-50 transition text-sm font-medium shadow-sm" title="Toggle Sort Order">
+                        <svg id="sortIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+                        <span id="sortText">Newest</span>
+                    </button>
+                    <div id="accountListTotal" class="text-base sm:text-lg font-bold text-ucbred bg-red-50 border border-red-100 px-4 py-1.5 rounded-lg shadow-sm">
+                        Total - 0
+                    </div>
                 </div>
             </div>
 
@@ -333,6 +339,10 @@
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Linked A/C:</span> <span id="caLinkedAccount" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Amount:</span> <span id="caAmount" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Period:</span> <span id="caPeriod" class="font-bold text-gray-900"></span></div>
+                    <div id="caDpsInfo" class="hidden flex-col space-y-2 mt-2 pt-2 border-t border-gray-100">
+                        <div class="flex justify-between"><span class="font-medium text-gray-500">Months Deposited:</span> <span id="caMonthsPaid" class="font-bold text-ucbred"></span></div>
+                        <div class="flex justify-between"><span class="font-medium text-gray-500">Total Deposited:</span> <span id="caTotalDeposited" class="font-bold text-gray-900"></span></div>
+                    </div>
                 </div>
 
                 <!-- Calculator Section -->
@@ -925,6 +935,16 @@
         // Global Data for FDR and DPS 
         let fdrDpsAccounts = [];
 
+        let currentSortOrder = 'newest';
+        document.getElementById('sortListBtn').addEventListener('click', () => {
+            currentSortOrder = currentSortOrder === 'newest' ? 'oldest' : 'newest';
+            document.getElementById('sortText').textContent = currentSortOrder === 'newest' ? 'Newest' : 'Oldest';
+            document.getElementById('sortIcon').innerHTML = currentSortOrder === 'newest'
+                ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>'
+                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m-4 4l4 4m0 0l4-4m-4 4V4"></path>';
+            renderTableData(accountListTitle.textContent);
+        });
+
         function renderTableData(type) {
             const isTermDeposit = type === 'FDR' || type === 'DPS';
             const tableHeaderRow = document.getElementById('accountTableHeaderRow');
@@ -958,7 +978,10 @@
             accountTableBody.innerHTML = '';
             
             if (isTermDeposit) {
-                const accountsToRender = fdrDpsAccounts.filter(a => a.type === type);
+                let accountsToRender = fdrDpsAccounts.filter(a => a.type === type);
+                if (currentSortOrder === 'oldest') {
+                    accountsToRender.reverse();
+                }
                 accountListTotal.textContent = `Total ${type} - ${accountsToRender.length}`;
                 
                 accountsToRender.forEach((acc, index) => {
@@ -990,10 +1013,12 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.amount}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.period}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                            ${waIcon}
-                            ${imoIcon}
-                            ${acc.mobile}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex items-center">
+                                ${waIcon}
+                                ${imoIcon}
+                                <span>${acc.mobile}</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadge}">${statusText}</span>
@@ -1003,7 +1028,10 @@
                     accountTableBody.appendChild(tr);
                 });
             } else {
-                const list = type === 'Savings' ? savingsAccounts : cdSndAccounts;
+                let list = type === 'Savings' ? [...savingsAccounts] : [...cdSndAccounts];
+                if (currentSortOrder === 'oldest') {
+                    list.reverse();
+                }
                 accountListTotal.textContent = `Total ${type} - ${list.length}`;
                 
                 list.forEach((acc, i) => {
@@ -1019,10 +1047,12 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.customerId}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                            ${waIcon}
-                            ${imoIcon}
-                            ${acc.mobile}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex items-center">
+                                ${waIcon}
+                                ${imoIcon}
+                                <span>${acc.mobile}</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${acc.status}</span>
@@ -1317,6 +1347,17 @@
             document.getElementById('caLinkedAccount').textContent = accountToClose.linkedAccount || 'N/A';
             document.getElementById('caAmount').textContent = accountToClose.amount;
             document.getElementById('caPeriod').textContent = accountToClose.period;
+            
+            const dpsInfoBlock = document.getElementById('caDpsInfo');
+            if (accountToClose.type === 'DPS') {
+                let mPaid = parseInt(accountToClose.monthsPaid) || 0;
+                let amt = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
+                document.getElementById('caMonthsPaid').textContent = mPaid + ' Months';
+                document.getElementById('caTotalDeposited').textContent = '৳ ' + (mPaid * amt).toLocaleString('en-IN');
+                if(dpsInfoBlock) { dpsInfoBlock.classList.remove('hidden'); dpsInfoBlock.classList.add('flex'); }
+            } else {
+                if(dpsInfoBlock) { dpsInfoBlock.classList.add('hidden'); dpsInfoBlock.classList.remove('flex'); }
+            }
             
             // Reset Calculator
             document.getElementById('caInterestRate').value = '';
