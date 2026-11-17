@@ -132,7 +132,7 @@
                     </div>
                 </div>
 
-                <!-- Summary Cards (Moved below chart) -->
+                <!-- Summary Cards -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-l-4 border-l-ucbred">
                         <div class="text-xs font-medium text-gray-500 mb-1">Total Active DPS</div>
@@ -153,13 +153,13 @@
                 </div>
             </div>
 
-            <!-- Right Column: Next 5 Days Alerts -->
+            <!-- Right Column: Alerts & Pending Requests -->
             <div class="lg:col-span-1 space-y-8">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold text-ucbred flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Action Needed (Next 5 Days)
+                            Action Needed
                         </h2>
                     </div>
                     
@@ -194,7 +194,7 @@
                 </div>
             </div>
 
-            <!-- Search Bar -->
+            <!-- Search Bar & Add Button -->
             <div class="flex items-center mb-6 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
                 <svg class="w-5 h-5 text-gray-400 ml-2 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <input type="text" id="searchInput" placeholder="Search by Account Name, Number, Customer ID, Mobile Number..." class="flex-1 outline-none px-2 py-2 text-gray-700 bg-transparent min-w-0">
@@ -202,6 +202,11 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
                 <button class="bg-ucbred hover:bg-ucbred-dark text-white px-6 py-2 rounded-md font-medium transition flex-shrink-0 ml-2">Search</button>
+                
+                <!-- Manual Add Request Button for Cheque/Card Page -->
+                <button id="addReqBtn" onclick="openNewReqModal()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-md font-medium transition flex-shrink-0 ml-2 hidden">
+                    Add Request
+                </button>
             </div>
 
             <!-- Table -->
@@ -209,13 +214,7 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr id="accountTableHeaderRow">
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opening Date</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Title</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer ID</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile Number</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <!-- Headers dynamically injected -->
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200" id="accountTableBody">
@@ -232,7 +231,6 @@
 
     <!-- Right Side Sliding Menu -->
     <aside id="sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
-        
         <!-- Profile Area -->
         <div class="bg-ucbred p-6 flex items-center justify-between">
             <div class="flex items-center">
@@ -281,6 +279,12 @@
                     DPS
                 </div>
             </a>
+            <a href="#" class="menu-item block px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-ucbred font-medium transition" data-name="Cheque/Card">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Cheque / Card
+                </div>
+            </a>
         </nav>
 
         <div class="p-4 border-t border-gray-100 space-y-3">
@@ -295,14 +299,61 @@
         </div>
     </aside>
 
-    <!-- Custom Toast Notification (Replaces native alerts) -->
+    <!-- Custom Toast Notification -->
     <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-[200] flex items-center">
         <svg id="toastIconSvg" class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="toastIcon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         <span id="toastMessage" class="font-medium">Coming Soon!</span>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div id="confirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center">
+    <!-- Manual Add Cheque/Card Request Modal -->
+    <div id="newReqModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300 flex flex-col" id="newReqModalContent">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <h3 class="text-lg font-bold text-gray-900">Add Cheque/Card Request</h3>
+                <button type="button" onclick="closeNewReqModal()" class="text-gray-400 hover:text-ucbred transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto">
+                <form id="newReqForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Request Date</label>
+                        <input type="date" id="nrDate" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred transition bg-white">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Linked Account (Search)</label>
+                        <input type="text" id="nrAcNumber" placeholder="Search A/C or Name..." autocomplete="off" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred transition">
+                        <div id="nrAcResults" class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                        <input type="text" id="nrName" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred transition">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Item Type</label>
+                            <select id="nrType" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred transition bg-white">
+                                <option value="Cheque">Cheque Book</option>
+                                <option value="Card">Visa Card</option>
+                                <option value="Both">Both (Cheque & Card)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Details (Leaf/Name)</label>
+                            <input type="text" id="nrDetails" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred transition">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 rounded-b-xl">
+                <button type="button" onclick="closeNewReqModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-md transition">Cancel</button>
+                <button type="submit" form="newReqForm" class="px-4 py-2 text-sm font-medium text-white bg-ucbred hover:bg-ucbred-dark rounded-md transition">Add Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (For FDR/DPS Action) -->
+    <div id="confirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300" id="confirmModalContent">
             <h3 class="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Action Details</h3>
             
@@ -322,6 +373,26 @@
                 <button id="cancelConfirmBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">Cancel</button>
                 <button id="pendingConfirmBtn" class="px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-md transition shadow-sm">Pending</button>
                 <button id="okConfirmBtn" class="px-4 py-2 text-sm font-medium text-white bg-ucbred hover:bg-ucbred-dark rounded-md transition shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CC Action Confirm Modal (For Cheque/Card) -->
+    <div id="ccConfirmModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300" id="ccConfirmModalContent">
+            <h3 class="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Confirm Update</h3>
+            <div class="space-y-3 mb-6 text-sm text-gray-700">
+                <div class="flex justify-between"><span class="font-medium text-gray-500">Item:</span> <span id="ccModalItem" class="font-bold text-purple-700"></span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-500">Customer Name:</span> <span id="ccModalName" class="font-bold text-gray-900"></span></div>
+                <div class="flex justify-between"><span class="font-medium text-gray-500">Account No:</span> <span id="ccModalAc" class="font-bold text-gray-900"></span></div>
+                <div class="flex justify-between items-center mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <span class="font-medium text-gray-600">Update Status To:</span> 
+                    <span id="ccModalNextStatus" class="font-bold text-purple-700 text-base text-right"></span>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 border-t border-gray-100 pt-4">
+                <button id="cancelCcConfirmBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">Cancel</button>
+                <button id="okCcConfirmBtn" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition shadow-sm">Confirm Update</button>
             </div>
         </div>
     </div>
@@ -435,6 +506,17 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Customer ID</label>
                         <input type="text" id="naCustomerId" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred focus:ring-1 focus:ring-ucbred transition">
                     </div>
+                    
+                    <!-- Requisition For Savings, CD/SND -->
+                    <div id="fieldRequisition" class="hidden border-t border-gray-100 pt-3 mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cheque/Card Requisition</label>
+                        <select id="naRequisition" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-ucbred focus:ring-1 focus:ring-ucbred transition bg-white">
+                            <option value="None">None</option>
+                            <option value="Cheque">Cheque Book</option>
+                            <option value="Card">Visa Card</option>
+                            <option value="Both">Both (Cheque & Card)</option>
+                        </select>
+                    </div>
 
                     <!-- Conditional Fields: CD/SND Select -->
                     <div id="fieldCdSndType" class="hidden">
@@ -515,22 +597,34 @@
                 request.onupgradeneeded = (event) => {
                     db = event.target.result;
                     if (!db.objectStoreNames.contains("accounts")) db.createObjectStore("accounts", { keyPath: "type" });
+                    if (!db.objectStoreNames.contains("chequecard")) db.createObjectStore("chequecard", { keyPath: "id" }); 
                 };
             });
         };
 
         const saveToLocal = (type, data) => {
             if(!db) return;
-            const tx = db.transaction("accounts", "readwrite");
-            tx.objectStore("accounts").put({ type: type, data: data });
+            if(type === 'chequecard') {
+                const tx = db.transaction("chequecard", "readwrite");
+                tx.objectStore("chequecard").put({ id: "all_data", data: data });
+            } else {
+                const tx = db.transaction("accounts", "readwrite");
+                tx.objectStore("accounts").put({ type: type, data: data });
+            }
         };
 
         const loadFromLocal = (type) => {
             return new Promise((resolve) => {
                 if(!db) return resolve([]);
-                const req = db.transaction("accounts", "readonly").objectStore("accounts").get(type);
-                req.onsuccess = () => resolve(req.result ? req.result.data : []);
-                req.onerror = () => resolve([]);
+                if(type === 'chequecard') {
+                    const req = db.transaction("chequecard", "readonly").objectStore("chequecard").get("all_data");
+                    req.onsuccess = () => resolve(req.result ? req.result.data : []);
+                    req.onerror = () => resolve([]);
+                } else {
+                    const req = db.transaction("accounts", "readonly").objectStore("accounts").get(type);
+                    req.onsuccess = () => resolve(req.result ? req.result.data : []);
+                    req.onerror = () => resolve([]);
+                }
             });
         };
 
@@ -546,75 +640,46 @@
         const formatIsoDate = (dateString) => {
             if (!dateString) return '';
             let str = String(dateString).trim();
-            
-            // If it's a JS ISO date string like "2026-11-11T18:00:00.000Z"
             if (str.includes('T') && str.endsWith('Z')) {
                 const d = new Date(str);
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const yyyy = d.getFullYear();
-                return `${dd}-${mm}-${yyyy}`;
+                return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
             }
-
-            // Manual formats like 18-10-2026 or 18/10/26 MUST be checked before JS Date() guesses incorrectly
             if (/^\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}$/.test(str)) {
                 let parts = str.split(/[-\/]/);
-                let p1 = parseInt(parts[0], 10);
-                let p2 = parseInt(parts[1], 10);
-                let p3 = parseInt(parts[2], 10);
-                
+                let p1 = parseInt(parts[0], 10), p2 = parseInt(parts[1], 10), p3 = parseInt(parts[2], 10);
                 if (p3 < 100) p3 += 2000;
-                
                 let day, month;
                 if (p1 > 12) { day = p1; month = p2; }
                 else if (p2 > 12) { month = p1; day = p2; }
-                else { day = p1; month = p2; } // Default DD-MM
-                
+                else { day = p1; month = p2; } 
                 return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${p3}`;
             }
-
-            // Fallback: Let JS Date try to parse it
             const d = new Date(str);
             if (!isNaN(d.getTime())) {
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const yyyy = d.getFullYear();
-                return `${dd}-${mm}-${yyyy}`;
+                return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
             }
-            
             return str;
         };
 
-        // Helper to parse DD-MM-YYYY dates back to Date objects
         const parseActionDate = (dateStr) => {
             if (!dateStr) return new Date();
             const parts = String(dateStr).trim().split('-');
-            if (parts.length === 3) {
-                return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-            }
+            if (parts.length === 3) return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
             return new Date();
         };
 
-        // Helper to calculate exact months paid for old/past dates
         const calculateDpsMonthsPaid = (dateStr, totalM) => {
             let openD = parseActionDate(dateStr);
             if (isNaN(openD.getTime())) return 1;
-            let today = new Date();
-            today.setHours(0,0,0,0);
-
-            let mPaid = 1;
-            let tempDate = new Date(openD);
-            
+            let today = new Date(); today.setHours(0,0,0,0);
+            let mPaid = 1; let tempDate = new Date(openD);
             while (true) {
                 tempDate.setMonth(tempDate.getMonth() + 1);
-                let daysDiff = Math.ceil((tempDate - today) / (1000 * 60 * 60 * 24));
-                
-                // Stop counting if the next due date is in the future, OR if it's within the 5-day action window
+                let daysDiff = Math.ceil((tempDate - today) / 86400000);
                 if (daysDiff >= -5) break;
-                
                 mPaid++;
                 if (totalM && mPaid >= totalM) break;
-                if (mPaid > 600) break; // 50 year failsafe
+                if (mPaid > 600) break;
             }
             return mPaid;
         };
@@ -623,25 +688,18 @@
             if (!totalM) return 0;
             let openD = parseActionDate(dateStr);
             if (isNaN(openD.getTime())) return 0;
-            let today = new Date();
-            today.setHours(0,0,0,0);
-
-            let mPaid = 0;
-            let tempDate = new Date(openD);
-            
+            let today = new Date(); today.setHours(0,0,0,0);
+            let mPaid = 0; let tempDate = new Date(openD);
             while (true) {
                 tempDate.setMonth(tempDate.getMonth() + totalM);
-                let daysDiff = Math.ceil((tempDate - today) / (1000 * 60 * 60 * 24));
-                
+                let daysDiff = Math.ceil((tempDate - today) / 86400000);
                 if (daysDiff >= -5) break; 
-                
                 mPaid += totalM;
-                if (mPaid > 1200) break; // 100 year failsafe
+                if (mPaid > 1200) break; 
             }
             return mPaid;
         };
 
-        // Utility to process text from Google Sheets into proper boolean values and dates
         const processSheetData = (sheetAccounts, type) => {
             return sheetAccounts.map(acc => {
                 acc.hasWhatsapp = (acc.hasWhatsapp === true || acc.hasWhatsapp === 'TRUE' || acc.hasWhatsapp === 'true');
@@ -649,30 +707,32 @@
                 if (type) acc.type = type;
                 if (acc.openDate) acc.openDate = formatIsoDate(acc.openDate);
                 if (acc.closeDate) acc.closeDate = formatIsoDate(acc.closeDate);
-                
-                // Ensure IDs and Linked Accounts are strings and clean up any prefixed apostrophes
                 if (acc.id !== undefined) acc.id = String(acc.id).replace(/^'/, '');
                 if (acc.customerId !== undefined) acc.customerId = String(acc.customerId).replace(/^'/, '');
                 if (acc.linkedAccount !== undefined) acc.linkedAccount = String(acc.linkedAccount).replace(/^'/, '');
-
-                // Auto-fix Mobile Numbers (Add leading zero if missing for 10-digit BD numbers)
                 if (acc.mobile !== undefined) {
                     let mobStr = String(acc.mobile).replace(/^'/, '').trim();
-                    if (mobStr.length === 10 && !mobStr.startsWith('0')) {
-                        mobStr = '0' + mobStr;
-                    }
+                    if (mobStr.length === 10 && !mobStr.startsWith('0')) mobStr = '0' + mobStr;
                     acc.mobile = mobStr;
                 }
-
-                // Auto-fill missing background data for manual sheet entries
                 if (type === 'FDR' || type === 'DPS') {
                     if (!acc.totalMonths && acc.period) acc.totalMonths = calcMonths(acc.period);
                     if (acc.monthsPaid === undefined || acc.monthsPaid === '') {
                         acc.monthsPaid = (type === 'DPS') ? calculateDpsMonthsPaid(acc.openDate, acc.totalMonths) : calculateFdrMonthsPaid(acc.openDate, acc.totalMonths);
                     }
                 }
-
                 return acc;
+            });
+        };
+
+        const processCcData = (sheetItems) => {
+            return sheetItems.map(item => {
+                if(item.id) item.id = String(item.id).replace(/^'/, '');
+                if(item.acNumber) item.acNumber = String(item.acNumber).replace(/^'/, '');
+                if(item.reqDate) item.reqDate = formatIsoDate(item.reqDate);
+                if(item.courierDate) item.courierDate = formatIsoDate(item.courierDate);
+                if(item.deliveryDate) item.deliveryDate = formatIsoDate(item.deliveryDate);
+                return item;
             });
         };
 
@@ -681,21 +741,14 @@
             const totalSavings = savingsAccounts.length;
             const totalCd = cdSndAccounts.filter(a => a.status && a.status.includes('CD')).length;
             const totalSnd = cdSndAccounts.filter(a => a.status && a.status.includes('SND')).length;
-            
-            // Filter strictly for active term deposits
             const activeFdr = fdrDpsAccounts.filter(a => a.type === 'FDR' && a.status !== 'Closed');
             const activeDps = fdrDpsAccounts.filter(a => a.type === 'DPS' && a.status !== 'Closed');
-            
             const fdrCount = activeFdr.length;
             const dpsCount = activeDps.length;
             
-            // Calculate Total FDR Amount
             let fdrTotal = 0;
-            activeFdr.forEach(a => {
-                fdrTotal += parseFloat(String(a.amount).replace(/[^0-9.]/g, '')) || 0;
-            });
+            activeFdr.forEach(a => fdrTotal += parseFloat(String(a.amount).replace(/[^0-9.]/g, '')) || 0);
 
-            // Calculate Total DPS Accumulated Amount (Monthly amount * Months Paid)
             let dpsTotal = 0;
             activeDps.forEach(a => {
                 let amount = parseFloat(String(a.amount).replace(/[^0-9.]/g, '')) || 0;
@@ -703,14 +756,11 @@
                 dpsTotal += (amount * months);
             });
 
-            // Format to BDT currency format
             const formatCurrency = (num) => '৳ ' + num.toLocaleString('en-IN', {maximumFractionDigits: 0});
 
             document.getElementById('valSavings').textContent = totalSavings.toLocaleString('en-US');
             document.getElementById('valCd').textContent = totalCd.toLocaleString('en-US');
             document.getElementById('valSnd').textContent = totalSnd.toLocaleString('en-US');
-            
-            // Inject counts along with their total amounts
             document.getElementById('valFdr').innerHTML = `${fdrCount.toLocaleString('en-US')} <span class="text-sm font-medium text-gray-500">- ${formatCurrency(fdrTotal)}</span>`;
             document.getElementById('valDps').innerHTML = `${dpsCount.toLocaleString('en-US')} <span class="text-sm font-medium text-gray-500">- ${formatCurrency(dpsTotal)}</span>`;
 
@@ -731,36 +781,30 @@
                 const response = await fetch(GOOGLE_APP_SCRIPT_URL);
                 const data = await response.json();
                 
-                // Exclude manual error status outputs
                 if (data && !data.status) {
-                    // Pull and reverse so that new sheet entries appear at the very top of the app
                     savingsAccounts = processSheetData(data.savings || []).reverse();
                     cdSndAccounts = processSheetData(data.cdsnd || []).reverse();
                     fdrDpsAccounts = [
                         ...processSheetData(data.fdr || [], 'FDR'),
                         ...processSheetData(data.dps || [], 'DPS')
                     ].reverse(); 
+                    chequeCardItems = processCcData(data.chequecard || []).reverse();
 
-                    // Cache to local IndexedDB
                     saveToLocal("savings", savingsAccounts);
                     saveToLocal("cdsnd", cdSndAccounts);
                     saveToLocal("fdrDps", fdrDpsAccounts);
+                    saveToLocal("chequecard", chequeCardItems);
 
                     updateDashboardUI();
                     renderAlerts();
                     
-                    // Unobtrusively re-render list if looking at one
-                    if (!accountListView.classList.contains('hidden')) {
-                        renderTableData(accountListTitle.textContent);
-                    }
-                    
+                    if (!accountListView.classList.contains('hidden')) renderTableData(accountListTitle.textContent);
                     if(!silent) showToast('Data synced successfully!', 'success');
                 }
             } catch(e) {
                 if(!silent) showToast('Error syncing data!', 'error');
                 console.error('Fetch error:', e);
             }
-            
             if(!silent) setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
         }
 
@@ -782,7 +826,6 @@
             }
         }
 
-
         // --- Sidebar Menu Logic ---
         const menuBtn = document.getElementById('menuBtn');
         const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -793,13 +836,13 @@
         function openMenu() {
             sidebar.classList.remove('translate-x-full');
             overlay.classList.remove('opacity-0', 'pointer-events-none');
-            body.classList.add('menu-open'); // Locks scroll
+            body.classList.add('menu-open');
         }
 
         function closeMenu() {
             sidebar.classList.add('translate-x-full');
             overlay.classList.add('opacity-0', 'pointer-events-none');
-            body.classList.remove('menu-open'); // Unlocks scroll
+            body.classList.remove('menu-open');
         }
 
         menuBtn.addEventListener('click', openMenu);
@@ -815,32 +858,25 @@
             const toastIcon = document.getElementById('toastIcon');
             const toastIconSvg = document.getElementById('toastIconSvg');
             
-            // Dynamically change the icon and color based on the action status
             if (type === 'success') {
-                toastIcon.setAttribute('d', 'M5 13l4 4L19 7'); // Checkmark icon
+                toastIcon.setAttribute('d', 'M5 13l4 4L19 7');
                 toastIconSvg.className = "w-5 h-5 text-green-500 mr-2 flex-shrink-0";
             } else if (type === 'warning') {
-                toastIcon.setAttribute('d', 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'); // Clock icon
+                toastIcon.setAttribute('d', 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z');
                 toastIconSvg.className = "w-5 h-5 text-yellow-500 mr-2 flex-shrink-0";
             } else if (type === 'error') {
-                toastIcon.setAttribute('d', 'M6 18L18 6M6 6l12 12'); // 'X' icon
+                toastIcon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
                 toastIconSvg.className = "w-5 h-5 text-red-500 mr-2 flex-shrink-0";
             } else {
-                toastIcon.setAttribute('d', 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'); // Info icon
+                toastIcon.setAttribute('d', 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z');
                 toastIconSvg.className = "w-5 h-5 text-blue-500 mr-2 flex-shrink-0";
             }
 
             toastMessage.textContent = message;
             toast.classList.remove('opacity-0', 'pointer-events-none');
             
-            // Clear existing timeout if multiple clicks happen
             if(toastTimeout) clearTimeout(toastTimeout);
-            
-            toastTimeout = setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
-            
-            // Close menu if open when clicking a link
+            toastTimeout = setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 3000);
             closeMenu();
         }
 
@@ -849,22 +885,16 @@
         const installAppBtn = document.getElementById('installAppBtn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
             e.preventDefault();
-            // Stash the event so it can be triggered later.
             deferredPrompt = e;
         });
 
         installAppBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
-                // Show the install prompt
                 deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
                 const { outcome } = await deferredPrompt.userChoice;
-                // We've used the prompt, and can't use it again, throw it away
                 deferredPrompt = null;
             } else {
-                // Fallback for browsers that don't support the prompt API natively in this environment
                 showToast('To install, tap "Add to Home Screen" in your browser menu.');
             }
             closeMenu();
@@ -885,21 +915,13 @@
             const lowerQuery = query.toLowerCase();
             const rows = accountTableBody.querySelectorAll('tr');
             rows.forEach(row => {
-                if (row.textContent.toLowerCase().includes(lowerQuery)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = row.textContent.toLowerCase().includes(lowerQuery) ? '' : 'none';
             });
         }
 
         searchInput.addEventListener('input', function() {
             const query = this.value;
-            if (query.length > 0) {
-                clearSearchBtn.classList.remove('hidden');
-            } else {
-                clearSearchBtn.classList.add('hidden');
-            }
+            clearSearchBtn.classList.toggle('hidden', query.length === 0);
             filterTable(query);
         });
 
@@ -919,22 +941,25 @@
             dashboardView.classList.add('hidden');
             accountListView.classList.remove('hidden');
             accountListTitle.textContent = title;
-            
-            // Reset search when opening a new page
             searchInput.value = '';
             clearSearchBtn.classList.add('hidden');
             
+            if (title === 'Cheque/Card') {
+                document.getElementById('addReqBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('addReqBtn').classList.add('hidden');
+            }
+
             renderTableData(title);
         }
 
         backToDashboardBtn.addEventListener('click', showDashboard);
 
-        // Global Data for Savings and CD/SND
+        // Global Data Structures
         let savingsAccounts = [];
         let cdSndAccounts = [];
-
-        // Global Data for FDR and DPS 
         let fdrDpsAccounts = [];
+        let chequeCardItems = []; 
 
         let currentSortOrder = 'newest';
         document.getElementById('sortListBtn').addEventListener('click', () => {
@@ -950,8 +975,51 @@
             const isTermDeposit = type === 'FDR' || type === 'DPS';
             const tableHeaderRow = document.getElementById('accountTableHeaderRow');
             const accountListTotal = document.getElementById('accountListTotal');
+            accountTableBody.innerHTML = '';
             
-            // Swap headers based on what type of page is being viewed
+            if (type === 'Cheque/Card') {
+                tableHeaderRow.innerHTML = `
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Request Date</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">A/C Number</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Leaf / Card</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Courier Rcv</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Delivered</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                `;
+                let list = [...chequeCardItems];
+                if (currentSortOrder === 'oldest') list.reverse();
+                accountListTotal.textContent = `Total - ${list.length}`;
+                
+                list.forEach((acc, i) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition";
+                    
+                    let badgeClass = "bg-gray-100 text-gray-800";
+                    if(acc.status === 'Courier Pending') badgeClass = "bg-yellow-100 text-yellow-800";
+                    if(acc.status === 'Delivery Pending') badgeClass = "bg-blue-100 text-blue-800";
+                    if(acc.status === 'Delivered') badgeClass = "bg-green-100 text-green-800";
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${acc.reqDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">${acc.itemType}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">${acc.acNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.details}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.courierDate || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.deliveryDate || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${acc.status}</span>
+                        </td>
+                    `;
+                    accountTableBody.appendChild(tr);
+                });
+                return;
+            }
+
             if (isTermDeposit) {
                 tableHeaderRow.innerHTML = `
                     <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
@@ -976,13 +1044,9 @@
                 `;
             }
 
-            accountTableBody.innerHTML = '';
-            
             if (isTermDeposit) {
                 let accountsToRender = fdrDpsAccounts.filter(a => a.type === type);
-                if (currentSortOrder === 'oldest') {
-                    accountsToRender.reverse();
-                }
+                if (currentSortOrder === 'oldest') accountsToRender.reverse();
                 accountListTotal.textContent = `Total ${type} - ${accountsToRender.length}`;
                 
                 accountsToRender.forEach((acc, index) => {
@@ -1030,9 +1094,7 @@
                 });
             } else {
                 let list = type === 'Savings' ? [...savingsAccounts] : [...cdSndAccounts];
-                if (currentSortOrder === 'oldest') {
-                    list.reverse();
-                }
+                if (currentSortOrder === 'oldest') list.reverse();
                 accountListTotal.textContent = `Total ${type} - ${list.length}`;
                 
                 list.forEach((acc, i) => {
@@ -1074,6 +1136,8 @@
                     showAccountList(name === 'Savings Account' ? 'Savings' : 'CD/SND');
                 } else if(name === 'FDR (Fixed Deposit)' || name === 'DPS (Deposit Pension)') {
                     showAccountList(name === 'FDR (Fixed Deposit)' ? 'FDR' : 'DPS');
+                } else if(name === 'Cheque/Card') {
+                    showAccountList('Cheque/Card');
                 } else {
                     showToast('Coming Soon!');
                 }
@@ -1102,17 +1166,16 @@
             const today = new Date();
             today.setHours(0,0,0,0);
 
+            // 1. Process FDR / DPS alerts
             fdrDpsAccounts.forEach(acc => {
                 if (acc.status === 'Closed') return;
-                
-                // Skip FDR accounts from the Action Alert list
                 if (acc.type === 'FDR') return; 
                 
                 let eventDate = parseActionDate(acc.openDate);
                 if (isNaN(eventDate.getTime())) return;
 
                 let isMaturedDps = false;
-                let overdueCount = 0; // Track how many months are due
+                let overdueCount = 0; 
 
                 if (acc.type === 'DPS') {
                     let mPaid = parseInt(acc.monthsPaid) || 0;
@@ -1124,47 +1187,50 @@
                     } else {
                         eventDate.setMonth(eventDate.getMonth() + mPaid);
                         
-                        // Calculate total pending installments (months due)
                         let tempDue = new Date(eventDate);
                         while (true) {
-                            let diff = Math.ceil((tempDue - today) / (1000 * 60 * 60 * 24));
-                            if (diff <= 5) { // If it's in the past or within 5 days
+                            let diff = Math.ceil((tempDue - today) / 86400000);
+                            if (diff <= 5) { 
                                 overdueCount++;
                                 tempDue.setMonth(tempDue.getMonth() + 1);
-                                if (overdueCount > 1200) break; // failsafe
-                            } else {
-                                break;
-                            }
+                                if (overdueCount > 1200) break;
+                            } else break;
                         }
                     }
                 } else if (acc.type === 'FDR') {
                     let mPaid = parseInt(acc.monthsPaid) || 0;
                     let totalM = parseInt(acc.totalMonths) || 0;
-                    if (totalM > 0) {
-                        eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
-                    }
+                    if (totalM > 0) eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
                 }
 
-                const daysDiff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+                const daysDiff = Math.ceil((eventDate - today) / 86400000);
                 
-                // Show items within the next 5 days, OR if they are overdue (daysDiff <= 5 includes negative/overdue days)
                 if (daysDiff <= 5) {
                     let actStatus = (acc.type === 'FDR' || isMaturedDps) ? 'Maturity' : 'Installment Due';
-                    if (overdueCount > 1 && !isMaturedDps) {
-                        actStatus = `${overdueCount} Months Due`;
-                    }
+                    if (overdueCount > 1 && !isMaturedDps) actStatus = `${overdueCount} Months Due`;
 
                     visibleAccounts.push({
                         ...acc,
                         eventDate: eventDate,
                         actionStatus: actStatus,
-                        overdueCount: overdueCount
+                        overdueCount: overdueCount,
+                        alertType: 'dpsfdr'
                     });
                 }
             });
 
+            // 2. Process Cheque/Card alerts
+            chequeCardItems.forEach(cc => {
+                if (cc.status === 'Delivered') return;
+                visibleAccounts.push({
+                    ...cc,
+                    eventDate: parseActionDate(cc.reqDate),
+                    alertType: 'chequecard'
+                });
+            });
+
             if (visibleAccounts.length === 0) {
-                alertsContainer.innerHTML = `<p class="text-gray-500 text-sm italic">No upcoming actions for the next 5 days.</p>`;
+                alertsContainer.innerHTML = `<p class="text-gray-500 text-sm italic">No pending actions.</p>`;
                 return;
             }
 
@@ -1175,7 +1241,42 @@
             let sortedAccounts = [...normalAccounts, ...pendingAccounts];
 
             sortedAccounts.forEach(account => {
-                const daysDiff = Math.ceil((account.eventDate - today) / (1000 * 60 * 60 * 24));
+                // Render Cheque/Card specific card
+                if (account.alertType === 'chequecard') {
+                    let btnText = account.status === 'Courier Pending' ? 'Courier Recv' : 'Deliver to Cust.';
+                    const card = `
+                        <div class="action-card flex items-start p-3 rounded-lg border transition bg-purple-50 border-purple-100 hover:border-purple-200">
+                            <div class="flex-shrink-0 mt-1">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs bg-purple-100 text-purple-700">
+                                    ${account.itemType === 'Cheque' ? 'CHQ' : 'CRD'}
+                                </div>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-sm font-bold text-gray-900">${account.customer}</h4>
+                                    <span class="text-xs font-semibold px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 shadow-sm">Req: ${account.reqDate}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                                    <span>A/C: ${account.acNumber}</span>
+                                    <span class="font-medium text-gray-700">${account.details}</span>
+                                </div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="text-xs font-medium text-purple-700">
+                                        Status: ${account.status}
+                                    </div>
+                                    <button onclick="openCcActionModal('${account.id}')" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded transition shadow-sm">
+                                        ${btnText}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    alertsContainer.insertAdjacentHTML('beforeend', card);
+                    return;
+                }
+
+                // Render normal DPS/FDR action card
+                const daysDiff = Math.ceil((account.eventDate - today) / 86400000);
                 let daysLabel = daysDiff === 0 ? 'Today' : (daysDiff > 0 ? `In ${daysDiff} day${daysDiff > 1 ? 's' : ''}` : `${Math.abs(daysDiff)} day(s) overdue`);
                 
                 let cardStyle = "bg-gray-50 border-gray-100 hover:border-gray-200";
@@ -1231,10 +1332,9 @@
             });
         }
 
-        // Initial Render
         renderAlerts();
 
-        // --- Custom Confirm Logic ---
+        // --- Custom Confirm Logic (DPS/FDR) ---
         const confirmModal = document.getElementById('confirmModal');
         const confirmModalContent = document.getElementById('confirmModalContent');
         const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
@@ -1247,7 +1347,6 @@
             let acc = fdrDpsAccounts.find(a => String(a.id) === String(id));
             if (!acc) return;
             
-            // Recalculate event date for the modal
             let eventDate = parseActionDate(acc.openDate);
             let isMaturedDps = false;
             let overdueCount = 0; 
@@ -1260,10 +1359,8 @@
                     eventDate.setMonth(eventDate.getMonth() + totalM);
                 } else {
                     eventDate.setMonth(eventDate.getMonth() + mPaid);
-                    
                     let tempDue = new Date(eventDate);
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
+                    const today = new Date(); today.setHours(0,0,0,0);
                     while (true) {
                         let diff = Math.ceil((tempDue - today) / 86400000);
                         if (diff <= 5) {
@@ -1275,14 +1372,10 @@
             } else if (acc.type === 'FDR') {
                 let mPaid = parseInt(acc.monthsPaid) || 0;
                 let totalM = parseInt(acc.totalMonths) || 0;
-                if (totalM > 0) {
-                    eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
-                }
+                if (totalM > 0) eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
             }
             
             currentActionAccount = { ...acc, eventDate: eventDate };
-
-            // Populate Modal Data
             document.getElementById('amName').textContent = currentActionAccount.customer;
             document.getElementById('amAccount').textContent = currentActionAccount.id;
             document.getElementById('amMobile').textContent = currentActionAccount.mobile;
@@ -1293,19 +1386,14 @@
                 displayAmount = `৳ ${(amt * overdueCount).toLocaleString('en-IN')} (${overdueCount} Months Due)`;
             }
             document.getElementById('amAmount').textContent = displayAmount;
-            
             document.getElementById('amPeriod').textContent = currentActionAccount.period;
             
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const daysDiff = Math.ceil((currentActionAccount.eventDate - today) / (1000 * 60 * 60 * 24));
+            const today = new Date(); today.setHours(0,0,0,0);
+            const daysDiff = Math.ceil((currentActionAccount.eventDate - today) / 86400000);
             let remainingText = daysDiff >= 0 ? `${daysDiff} Days Remaining` : `${Math.abs(daysDiff)} Days Overdue`;
-            if (currentActionAccount.isPending) {
-                remainingText = `Pending (${Math.abs(daysDiff)} Days)`;
-            }
+            if (currentActionAccount.isPending) remainingText = `Pending (${Math.abs(daysDiff)} Days)`;
             document.getElementById('amRemaining').textContent = remainingText;
 
-            // Show Modal and lock background scroll
             confirmModal.classList.remove('opacity-0', 'pointer-events-none');
             confirmModalContent.classList.remove('scale-95');
             confirmModalContent.classList.add('scale-100');
@@ -1316,7 +1404,7 @@
             confirmModal.classList.add('opacity-0', 'pointer-events-none');
             confirmModalContent.classList.add('scale-95');
             confirmModalContent.classList.remove('scale-100');
-            document.body.classList.remove('menu-open'); // unlock scroll
+            document.body.classList.remove('menu-open'); 
             currentActionAccount = null;
         }
 
@@ -1337,42 +1425,100 @@
 
         okConfirmBtn.addEventListener('click', () => {
             if (currentActionAccount) {
-                // Find in fdrDpsAccounts and update monthsPaid dynamically
                 let acc = fdrDpsAccounts.find(a => String(a.id) === String(currentActionAccount.id));
                 if(acc) {
-                    if (acc.type === 'DPS') {
-                        acc.monthsPaid = (parseInt(acc.monthsPaid) || 0) + 1;
-                    }
+                    if (acc.type === 'DPS') acc.monthsPaid = (parseInt(acc.monthsPaid) || 0) + 1;
                     if (acc.type === 'FDR') {
                         acc.status = 'Closed';
                         const d = new Date();
-                        const dd = String(d.getDate()).padStart(2, '0');
-                        const mm = String(d.getMonth() + 1).padStart(2, '0');
-                        const yyyy = d.getFullYear();
-                        acc.closeDate = `${dd}-${mm}-${yyyy}`;
+                        acc.closeDate = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
                     }
                     acc.isPending = false;
                     saveToLocal("fdrDps", fdrDpsAccounts);
-                    
-                    // Update in Google Sheets!
                     sendToGoogleSheet(acc, acc.type.toLowerCase(), 'update');
-                
                     renderAlerts();
-                    updateDashboardUI(); // Instantly update dashboard DPS total
+                    updateDashboardUI();
+                    showToast(acc.type === 'FDR' ? 'FDR closed successfully!' : 'Payment confirmed & action complete!', 'success');
                     
-                    if (acc.type === 'FDR') {
-                        showToast('FDR closed successfully!', 'success');
-                    } else {
-                        showToast('Payment confirmed & action complete!', 'success');
-                    }
-                    
-                    // Refresh list if currently viewing it
                     if (!accountListView.classList.contains('hidden') && (accountListTitle.textContent === 'DPS' || accountListTitle.textContent === 'FDR')) {
                         renderTableData(accountListTitle.textContent);
                     }
                 }
             }
             closeConfirmModal();
+        });
+
+        // --- Cheque/Card Action Confirm Modal Logic ---
+        let currentCcActionId = null;
+        const ccConfirmModal = document.getElementById('ccConfirmModal');
+        const ccConfirmModalContent = document.getElementById('ccConfirmModalContent');
+
+        window.openCcActionModal = function(id) {
+            let cc = chequeCardItems.find(c => String(c.id) === String(id));
+            if (!cc) return;
+            currentCcActionId = id;
+
+            let nextStatus = '';
+            if (cc.status === 'Courier Pending') nextStatus = 'Delivery Pending';
+            else if (cc.status === 'Delivery Pending') nextStatus = 'Delivered';
+            else return; 
+
+            document.getElementById('ccModalItem').textContent = `${cc.itemType} (${cc.details})`;
+            document.getElementById('ccModalName').textContent = cc.customer;
+            document.getElementById('ccModalAc').textContent = cc.acNumber;
+            document.getElementById('ccModalNextStatus').textContent = nextStatus;
+
+            ccConfirmModal.classList.remove('opacity-0', 'pointer-events-none');
+            ccConfirmModalContent.classList.remove('scale-95');
+            ccConfirmModalContent.classList.add('scale-100');
+            document.body.classList.add('menu-open');
+        };
+
+        document.getElementById('cancelCcConfirmBtn').addEventListener('click', () => {
+            ccConfirmModal.classList.add('opacity-0', 'pointer-events-none');
+            ccConfirmModalContent.classList.add('scale-95');
+            ccConfirmModalContent.classList.remove('scale-100');
+            document.body.classList.remove('menu-open');
+            currentCcActionId = null;
+        });
+
+        document.getElementById('okCcConfirmBtn').addEventListener('click', () => {
+            if (!currentCcActionId) return;
+            let cc = chequeCardItems.find(c => String(c.id) === String(currentCcActionId));
+            if (!cc) return;
+
+            const d = new Date();
+            const todayStr = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+
+            if (cc.status === 'Courier Pending') {
+                cc.status = 'Delivery Pending';
+                cc.courierDate = todayStr;
+            } else if (cc.status === 'Delivery Pending') {
+                cc.status = 'Delivered';
+                cc.deliveryDate = todayStr;
+            }
+
+            saveToLocal('chequecard', chequeCardItems);
+            
+            // NOTE: Sending pure payload object for update so it matches the ID in the Sheet loop
+            let sheetPayload = {...cc};
+            sheetPayload.acNumber = "'" + cc.acNumber; // Prevent A/C number from converting to Scientific notation
+            
+            document.getElementById('cancelCcConfirmBtn').click(); 
+            showToast('Status updated & saving to sheet...', 'info');
+
+            sendToGoogleSheet(sheetPayload, 'chequecard', 'update').then((isSaved) => {
+                if(isSaved) {
+                    showToast('Status successfully updated in Sheet!', 'success');
+                    syncData(true); // Quickly sync to ensure data is completely matched and correct
+                }
+                else showToast('Error saving to Sheet!', 'error');
+            });
+
+            renderAlerts();
+            if (!accountListView.classList.contains('hidden') && accountListTitle.textContent === 'Cheque/Card') {
+                renderTableData('Cheque/Card');
+            }
         });
 
         // --- Close Account Modal Logic ---
@@ -1412,26 +1558,19 @@
             if(!accountToClose) return;
             
             document.getElementById('caDate').textContent = accountToClose.openDate;
-
             const caCloseDateInput = document.getElementById('caCloseDate');
             if (accountToClose.status === 'Closed' && accountToClose.closeDate) {
                 const parts = accountToClose.closeDate.split('-');
                 if(parts.length === 3) caCloseDateInput.value = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                
-                // Lock the date picker if account is already closed
                 caCloseDateInput.disabled = true;
                 caCloseDateInput.classList.add('bg-gray-100', 'cursor-not-allowed', 'text-gray-500');
-                
                 document.getElementById('confirmCloseBtn').classList.add('hidden');
                 document.getElementById('cancelCloseBtn').textContent = 'Close';
             } else {
                 const d = new Date();
                 caCloseDateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                
-                // Unlock the date picker for active accounts
                 caCloseDateInput.disabled = false;
                 caCloseDateInput.classList.remove('bg-gray-100', 'cursor-not-allowed', 'text-gray-500');
-                
                 document.getElementById('confirmCloseBtn').classList.remove('hidden');
                 document.getElementById('cancelCloseBtn').textContent = 'Cancel';
             }
@@ -1450,8 +1589,6 @@
             }
             
             updateModalDynamicInfo();
-            
-            // Reset Calculator
             document.getElementById('caInterestRate').value = '';
             document.getElementById('caTinStatus').value = '10';
             document.getElementById('caCalcResult').classList.add('hidden');
@@ -1459,35 +1596,26 @@
             closeAccountModal.classList.remove('opacity-0', 'pointer-events-none');
             closeAccountModalContent.classList.remove('scale-95');
             closeAccountModalContent.classList.add('scale-100');
-            document.body.classList.add('menu-open'); // lock scroll
+            document.body.classList.add('menu-open'); 
         }
 
-        // --- Calculator Logic ---
         function calculateMaturity() {
             if (!accountToClose) return;
-            const rateInput = document.getElementById('caInterestRate').value;
-            const rate = parseFloat(rateInput);
+            const rate = parseFloat(document.getElementById('caInterestRate').value);
             const tinRate = parseFloat(document.getElementById('caTinStatus').value) / 100;
             const resultDiv = document.getElementById('caCalcResult');
 
-            if (isNaN(rate) || rate <= 0) {
-                resultDiv.classList.add('hidden');
-                return;
-            }
+            if (isNaN(rate) || rate <= 0) { resultDiv.classList.add('hidden'); return; }
 
             let amount = parseFloat(String(accountToClose.amount).replace(/[^0-9.]/g, '')) || 0;
             let months = getCalculatedMonths();
-
-            let principal = 0;
-            let grossInterest = 0;
+            let principal = 0; let grossInterest = 0;
 
             if (accountToClose.type === 'FDR') {
                 principal = amount;
-                // Standard FDR Simple Interest in Bangladesh: (Principal * Rate * Months) / 1200
                 grossInterest = (principal * rate * months) / 1200;
             } else if (accountToClose.type === 'DPS') {
                 principal = amount * months;
-                // Standard DPS Formula: (Monthly * Rate * n * (n+1)) / 2400
                 grossInterest = (amount * rate * months * (months + 1)) / 2400;
             }
 
@@ -1515,7 +1643,7 @@
             closeAccountModal.classList.add('opacity-0', 'pointer-events-none');
             closeAccountModalContent.classList.add('scale-95');
             closeAccountModalContent.classList.remove('scale-100');
-            document.body.classList.remove('menu-open'); // unlock scroll
+            document.body.classList.remove('menu-open'); 
             accountToClose = null;
         }
 
@@ -1532,17 +1660,147 @@
                     acc.monthsPaid = getCalculatedMonths();
                     acc.isPending = false;
                     saveToLocal("fdrDps", fdrDpsAccounts);
-                    
-                    // Update in Google Sheets!
                     sendToGoogleSheet(acc, acc.type.toLowerCase(), 'update');
                 }
-
                 renderTableData(accountToClose.type);
                 renderAlerts();
-                updateDashboardUI(); // Update Dashboard count and total instantly
+                updateDashboardUI(); 
                 showToast(accountToClose.type + ' Account Closed Successfully!', 'success');
             }
             closeCloseAccountModal();
+        });
+
+        // --- Manual Add Cheque/Card Modal Logic ---
+        const newReqModal = document.getElementById('newReqModal');
+        const newReqModalContent = document.getElementById('newReqModalContent');
+        const nrAcNumber = document.getElementById('nrAcNumber');
+        const nrAcResults = document.getElementById('nrAcResults');
+
+        function openNewReqModal() {
+            document.getElementById('newReqForm').reset();
+            const d = new Date();
+            document.getElementById('nrDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            document.getElementById('nrType').dispatchEvent(new Event('change')); // trigger details preset
+            
+            newReqModal.classList.remove('opacity-0', 'pointer-events-none');
+            newReqModalContent.classList.remove('scale-95');
+            newReqModalContent.classList.add('scale-100');
+            document.body.classList.add('menu-open');
+        }
+
+        function closeNewReqModal() {
+            newReqModal.classList.add('opacity-0', 'pointer-events-none');
+            newReqModalContent.classList.add('scale-95');
+            newReqModalContent.classList.remove('scale-100');
+            document.body.classList.remove('menu-open');
+        }
+
+        document.getElementById('nrType').addEventListener('change', (e) => {
+            if (e.target.value === 'Cheque') {
+                document.getElementById('nrDetails').value = '20 Pages';
+            } else if (e.target.value === 'Card') {
+                document.getElementById('nrDetails').value = 'Visa';
+            } else {
+                document.getElementById('nrDetails').value = '20 Pages / Visa';
+            }
+        });
+
+        nrAcNumber.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            nrAcResults.innerHTML = '';
+            if (query.length > 0) {
+                const matches = [...savingsAccounts, ...cdSndAccounts].filter(acc => 
+                    String(acc.id).toLowerCase().includes(query) || String(acc.customer).toLowerCase().includes(query)
+                );
+                if (matches.length > 0) {
+                    matches.forEach(acc => {
+                        const div = document.createElement('div');
+                        div.className = 'px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm border-b border-gray-50';
+                        div.innerHTML = `<span class="font-bold text-gray-800">${acc.id}</span> - <span class="text-gray-600">${acc.customer}</span>`;
+                        div.onclick = () => {
+                            nrAcNumber.value = acc.id;
+                            document.getElementById('nrName').value = acc.customer || '';
+                            
+                            let tVal = document.getElementById('nrType').value;
+                            if (tVal === 'Cheque') {
+                                document.getElementById('nrDetails').value = (acc.status && acc.status.includes('Active')) ? (acc.status.includes('CD') || acc.status.includes('SND') ? '50 Pages' : '20 Pages') : '20 Pages';
+                            } else if (tVal === 'Both') {
+                                let chqDet = (acc.status && acc.status.includes('Active')) ? (acc.status.includes('CD') || acc.status.includes('SND') ? '50 Pages' : '20 Pages') : '20 Pages';
+                                document.getElementById('nrDetails').value = chqDet + ' / Visa';
+                            }
+                            
+                            nrAcResults.classList.add('hidden');
+                        };
+                        nrAcResults.appendChild(div);
+                    });
+                    nrAcResults.classList.remove('hidden');
+                } else { nrAcResults.classList.add('hidden'); }
+            } else { nrAcResults.classList.add('hidden'); }
+        });
+
+        document.addEventListener('click', (e) => {
+            if(!nrAcNumber.contains(e.target) && !nrAcResults.contains(e.target)) nrAcResults.classList.add('hidden');
+        });
+
+        document.getElementById('newReqForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rawDate = document.getElementById('nrDate').value;
+            const displayDate = rawDate ? `${rawDate.split('-')[2]}-${rawDate.split('-')[1]}-${rawDate.split('-')[0]}` : '';
+            
+            let itemType = document.getElementById('nrType').value;
+            let reqDetails = document.getElementById('nrDetails').value;
+            let acNum = document.getElementById('nrAcNumber').value;
+            let cusName = document.getElementById('nrName').value;
+
+            let reqsToSave = [];
+
+            const createCcReq = (iType, iDetails) => {
+                let reqId = Date.now().toString() + Math.floor(Math.random()*1000);
+                let sheetPayload = {
+                    id: "'" + reqId, // Added with apostrophe correctly during manual ADD
+                    reqDate: displayDate,
+                    itemType: iType,
+                    customer: cusName,
+                    acNumber: "'" + acNum,
+                    details: iDetails,
+                    courierDate: '',
+                    deliveryDate: '',
+                    status: 'Courier Pending'
+                };
+                let localPayload = {...sheetPayload, id: reqId, acNumber: acNum};
+                chequeCardItems.unshift(localPayload);
+                reqsToSave.push(sheetPayload);
+            };
+
+            if (itemType === 'Both') {
+                let chqDet = reqDetails.split('/')[0] ? reqDetails.split('/')[0].trim() : '20 Pages';
+                let crdDet = reqDetails.split('/')[1] ? reqDetails.split('/')[1].trim() : 'Visa';
+                createCcReq('Cheque', chqDet);
+                createCcReq('Card', crdDet);
+            } else {
+                createCcReq(itemType, reqDetails);
+            }
+            
+            saveToLocal('chequecard', chequeCardItems);
+            
+            updateDashboardUI();
+            renderAlerts();
+            if (!accountListView.classList.contains('hidden') && accountListTitle.textContent === 'Cheque/Card') {
+                renderTableData('Cheque/Card');
+            }
+            
+            closeNewReqModal();
+            showToast('Request adding to sheet...', 'info');
+            
+            let allSaved = true;
+            for(let req of reqsToSave) {
+                let res = await sendToGoogleSheet(req, 'chequecard', 'add');
+                if(!res) allSaved = false;
+            }
+            if (allSaved) showToast('Request saved successfully!', 'success');
+            else showToast('Error saving to sheet!', 'error');
+            
+            syncData(true);
         });
 
         // --- New Account Modal Logic ---
@@ -1555,6 +1813,7 @@
         const naTabs = document.querySelectorAll('.tab-btn');
         const naTypeInput = document.getElementById('naType');
         const fieldCustomerId = document.getElementById('fieldCustomerId');
+        const fieldRequisition = document.getElementById('fieldRequisition');
         const fieldCdSndType = document.getElementById('fieldCdSndType');
         const fieldAmountPeriod = document.getElementById('fieldAmountPeriod');
         const fieldLinkedAccount = document.getElementById('fieldLinkedAccount');
@@ -1564,28 +1823,21 @@
 
         function openNewAccountModal() {
             newAccountForm.reset();
-            
-            // Default Date to Today format suitable for input type="date"
             const d = new Date();
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            naDate.value = `${yyyy}-${mm}-${dd}`;
-            
-            // Default Tab View to Savings
+            naDate.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             setTabActive('savings');
             
             newAccountModal.classList.remove('opacity-0', 'pointer-events-none');
             newAccountModalContent.classList.remove('scale-95');
             newAccountModalContent.classList.add('scale-100');
-            document.body.classList.add('menu-open'); // Lock background scroll
+            document.body.classList.add('menu-open'); 
         }
 
         function closeNewAccountModal() {
             newAccountModal.classList.add('opacity-0', 'pointer-events-none');
             newAccountModalContent.classList.add('scale-95');
             newAccountModalContent.classList.remove('scale-100');
-            document.body.classList.remove('menu-open'); // Unlock background scroll
+            document.body.classList.remove('menu-open'); 
         }
 
         closeNewAccountBtn.addEventListener('click', closeNewAccountModal);
@@ -1604,18 +1856,21 @@
 
             naTypeInput.value = type;
 
-            // Reset visibility
             fieldCustomerId.classList.add('hidden');
+            fieldRequisition.classList.add('hidden');
             fieldCdSndType.classList.add('hidden');
             fieldAmountPeriod.classList.add('hidden');
             fieldLinkedAccount.classList.add('hidden');
 
-            // Apply specific visibility and status behavior based on type
+            document.getElementById('naRequisition').value = 'None'; // Reset
+
             if (type === 'savings') {
                 fieldCustomerId.classList.remove('hidden');
+                fieldRequisition.classList.remove('hidden');
                 naStatus.value = 'Active';
             } else if (type === 'cdsnd') {
                 fieldCustomerId.classList.remove('hidden');
+                fieldRequisition.classList.remove('hidden');
                 fieldCdSndType.classList.remove('hidden');
                 naStatus.value = 'Active ' + naCdSndType.value;
             } else if (type === 'fdr' || type === 'dps') {
@@ -1625,19 +1880,12 @@
             }
         }
 
-        naTabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                setTabActive(e.target.dataset.type);
-            });
-        });
+        naTabs.forEach(tab => tab.addEventListener('click', (e) => setTabActive(e.target.dataset.type)));
 
         naCdSndType.addEventListener('change', () => {
-            if (naTypeInput.value === 'cdsnd') {
-                naStatus.value = 'Active ' + naCdSndType.value;
-            }
+            if (naTypeInput.value === 'cdsnd') naStatus.value = 'Active ' + naCdSndType.value;
         });
 
-        // Linked Account Autocomplete Logic
         const naLinkedAccount = document.getElementById('naLinkedAccount');
         const naLinkedAccountResults = document.getElementById('naLinkedAccountResults');
         const naLinkedAccountOkBtn = document.getElementById('naLinkedAccountOkBtn');
@@ -1657,68 +1905,40 @@
                         div.innerHTML = `<span class="font-bold text-gray-800">${acc.id}</span> - <span class="text-gray-600">${acc.customer}</span>`;
                         div.onclick = () => {
                             naLinkedAccount.value = acc.id;
-                            // Auto-fill Name and Mobile number
                             document.getElementById('naName').value = acc.customer || '';
                             document.getElementById('naMobile').value = acc.mobile || '';
-                            
                             naLinkedAccountResults.classList.add('hidden');
                         };
                         naLinkedAccountResults.appendChild(div);
                     });
                     naLinkedAccountResults.classList.remove('hidden');
-                } else {
-                    naLinkedAccountResults.classList.add('hidden');
-                }
-            } else {
-                naLinkedAccountResults.classList.add('hidden');
-            }
+                } else { naLinkedAccountResults.classList.add('hidden'); }
+            } else { naLinkedAccountResults.classList.add('hidden'); }
         });
 
         naLinkedAccountOkBtn.addEventListener('click', () => {
             naLinkedAccountResults.classList.add('hidden');
-            // Adding a visual feedback on OK click
             naLinkedAccountOkBtn.classList.add('bg-green-200');
             setTimeout(() => naLinkedAccountOkBtn.classList.remove('bg-green-200'), 200);
         });
 
-        // Hide dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if(!naLinkedAccount.contains(e.target) && !naLinkedAccountResults.contains(e.target) && e.target !== naLinkedAccountOkBtn) {
                 naLinkedAccountResults.classList.add('hidden');
             }
         });
 
-        // Helper functions for updating Dashboard counters
-        function parseFormattedNumber(str) { 
-            return parseInt(str.replace(/,/g, ''), 10) || 0; 
-        }
-        function formatNumber(num) { 
-            return num.toLocaleString('en-US'); 
-        }
-        function incrementElement(id) {
-            const el = document.getElementById(id);
-            if (el) {
-                const val = parseFormattedNumber(el.innerText);
-                el.innerText = formatNumber(val + 1);
-            }
-        }
-
         newAccountForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const type = naTypeInput.value;
             
-            // Format the date for display
             const rawDate = document.getElementById('naDate').value;
             let displayDate = rawDate;
             if(rawDate) {
                 const parts = rawDate.split('-');
-                if (parts.length === 3) {
-                    displayDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
+                if (parts.length === 3) displayDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
             }
 
-            // Format Period string
             let periodVal = document.getElementById('naPeriodNum').value;
             let periodUnit = document.getElementById('naPeriodUnit').value;
             if (periodVal === '1' && periodUnit === 'Months') periodUnit = 'Month';
@@ -1727,14 +1947,9 @@
             
             let totalM = calcMonths(formattedPeriod);
             let mPaid = 0;
-            if (type === 'dps') {
-                mPaid = calculateDpsMonthsPaid(displayDate, totalM);
-            } else if (type === 'fdr') {
-                mPaid = calculateFdrMonthsPaid(displayDate, totalM);
-            }
+            if (type === 'dps') mPaid = calculateDpsMonthsPaid(displayDate, totalM);
+            else if (type === 'fdr') mPaid = calculateFdrMonthsPaid(displayDate, totalM);
 
-            // Generate New Account Object
-            // Prefixing ID and Mobile with apostrophe (') ensures Google Sheets treats them as pure text, preventing scientific notation and dropping zeros
             const newAcc = {
                 id: "'" + document.getElementById('naNumber').value,
                 openDate: displayDate,
@@ -1751,35 +1966,63 @@
                 hasImo: document.getElementById('naHasImo').checked
             };
             
-            // For local immediate display, strip the apostrophes so it looks clean
             const localAcc = {...newAcc};
             localAcc.id = localAcc.id.replace(/^'/, '');
             localAcc.mobile = localAcc.mobile.replace(/^'/, '');
             if (localAcc.customerId) localAcc.customerId = localAcc.customerId.replace(/^'/, '');
             if (localAcc.linkedAccount) localAcc.linkedAccount = localAcc.linkedAccount.replace(/^'/, '');
             
-            // Append data locally immediately
-            if (type === 'savings') {
-                savingsAccounts.unshift(localAcc);
-            } else if (type === 'cdsnd') {
-                cdSndAccounts.unshift(localAcc);
-            } else if (type === 'fdr') {
-                fdrDpsAccounts.unshift({...localAcc, type: 'FDR', status: 'Active'});
-            } else if (type === 'dps') {
-                fdrDpsAccounts.unshift({...localAcc, type: 'DPS', status: 'Active'});
+            if (type === 'savings') savingsAccounts.unshift(localAcc);
+            else if (type === 'cdsnd') cdSndAccounts.unshift(localAcc);
+            else if (type === 'fdr') fdrDpsAccounts.unshift({...localAcc, type: 'FDR', status: 'Active'});
+            else if (type === 'dps') fdrDpsAccounts.unshift({...localAcc, type: 'DPS', status: 'Active'});
+
+            // Handle Auto-Requisition Generation for Cheque/Card
+            let reqVal = document.getElementById('naRequisition').value;
+            let createdReqs = [];
+            if (reqVal !== 'None' && (type === 'savings' || type === 'cdsnd')) {
+                let createReq = (itemType) => {
+                    let details = itemType === 'Cheque' ? (type === 'savings' ? '20 Pages' : '50 Pages') : 'Visa';
+                    let reqId = Date.now().toString() + Math.floor(Math.random()*1000);
+                    let sheetPayload = {
+                        id: "'" + reqId,
+                        reqDate: displayDate,
+                        itemType: itemType,
+                        customer: document.getElementById('naName').value,
+                        acNumber: "'" + document.getElementById('naNumber').value,
+                        details: details,
+                        courierDate: '',
+                        deliveryDate: '',
+                        status: 'Courier Pending'
+                    };
+                    let localPayload = {...sheetPayload, id: reqId, acNumber: document.getElementById('naNumber').value};
+                    chequeCardItems.unshift(localPayload);
+                    saveToLocal('chequecard', chequeCardItems);
+                    createdReqs.push(sheetPayload);
+                };
+                if (reqVal === 'Cheque' || reqVal === 'Both') createReq('Cheque');
+                if (reqVal === 'Card' || reqVal === 'Both') createReq('Card');
             }
 
-            updateDashboardUI(); // Update all counters and totals dynamically
-            renderAlerts(); // Immediately calculate next alert if applicable
-
-            // Send data to Google Sheets in the background!
-            const isSaved = await sendToGoogleSheet(newAcc, type, 'add');
+            updateDashboardUI(); 
+            renderAlerts(); 
 
             closeNewAccountModal();
+            showToast('Saving New Account & Requests...', 'info');
+
+            // Send base account to sheet
+            const isSaved = await sendToGoogleSheet(newAcc, type, 'add');
             
+            // Send requests to sheet async
+            if(isSaved && createdReqs.length > 0) {
+                for (let req of createdReqs) {
+                    await sendToGoogleSheet(req, 'chequecard', 'add');
+                }
+            }
+
             if (isSaved) {
-                showToast('New ' + type.toUpperCase() + ' account added successfully!', 'success');
-                syncData(true); // Quickly sync to ensure data is completely matched
+                showToast('New ' + type.toUpperCase() + ' account & requisitions added!', 'success');
+                syncData(true); 
             } else {
                 showToast('Error saving to Google Sheets!', 'error');
             }
@@ -1794,29 +2037,14 @@
                 datasets: [{
                     label: 'Number of Accounts',
                     data: [0, 0, 0, 0],
-                    backgroundColor: [
-                        '#4B5563', // Gray 600
-                        '#9CA3AF', // Gray 400
-                        '#E31837', // UCB Red
-                        '#FCA5A5'  // Red 300
-                    ],
+                    backgroundColor: ['#4B5563', '#9CA3AF', '#E31837', '#FCA5A5'],
                     borderWidth: 0,
                     hoverOffset: 4
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            font: { family: "'Inter', sans-serif", size: 12 },
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { font: { family: "'Inter', sans-serif", size: 12 }, usePointStyle: true, padding: 20 } } },
                 cutout: '70%'
             }
         });
@@ -1824,23 +2052,18 @@
         // --- Initialize App & Background Polling ---
         async function initializeApp() {
             try {
-                // Instantly load data from IndexedDB
                 await initDB();
                 savingsAccounts = (await loadFromLocal("savings")) || [];
                 cdSndAccounts = (await loadFromLocal("cdsnd")) || [];
                 fdrDpsAccounts = (await loadFromLocal("fdrDps")) || [];
+                chequeCardItems = (await loadFromLocal("chequecard")) || [];
                 
                 updateDashboardUI();
                 renderAlerts();
                 
-                if (!accountListView.classList.contains('hidden')) {
-                    renderTableData(accountListTitle.textContent);
-                }
-            } catch (e) {
-                console.error("Local DB Init failed", e);
-            }
+                if (!accountListView.classList.contains('hidden')) renderTableData(accountListTitle.textContent);
+            } catch (e) { console.error("Local DB Init failed", e); }
             
-            // Perform an initial background sync & set 30s polling
             syncData(true);
             setInterval(() => syncData(true), 30000);
         }
@@ -1864,10 +2087,9 @@
 
         function logout() {
             sessionStorage.removeItem('mirzakhilUser');
-            location.reload(); // Instantly pushes them back to login screen
+            location.reload(); 
         }
 
-        // Check if already logged in
         const loggedInUser = sessionStorage.getItem('mirzakhilUser');
         if (loggedInUser) {
             const userData = JSON.parse(loggedInUser);
@@ -1875,7 +2097,6 @@
             loginOverlay.classList.add('hidden');
             initializeApp();
         } else {
-            // Not logged in! Stop loading data and show overlay
             loginOverlay.classList.remove('hidden');
         }
 
@@ -1892,7 +2113,7 @@
                     const response = await fetch(GOOGLE_APP_SCRIPT_URL);
                     const data = await response.json();
                     
-                    if (data && !data.status) { // Checking if the response is valid sheet data
+                    if (data && !data.status) { 
                         const users = data.users || [];
                         const user = users.find(u => String(u.uid) === uid && String(u.pass) === pass);
                         
@@ -1904,15 +2125,12 @@
                                 setLoggedInUI(user.name);
                                 loginOverlay.classList.add('hidden');
                                 showToast('Login Successful!', 'success');
-                                
-                                initializeApp(); // Automatically syncs data and starts the background loader
+                                initializeApp();
                             }
                         } else {
                             showToast('Invalid UID or Password!', 'error');
                         }
-                    } else {
-                         showToast('Error connecting to database!', 'error');
-                    }
+                    } else { showToast('Error connecting to database!', 'error'); }
                 } catch (err) {
                     console.error("Login Error:", err);
                     showToast('Network error! Check URL.', 'error');
