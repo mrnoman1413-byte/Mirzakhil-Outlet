@@ -17,7 +17,7 @@
                 extend: {
                     colors: {
                         ucbred: {
-                            DEFAULT: '#E31837', // Custom Red inspired by UCB
+                            DEFAULT: '#E31837',
                             light: '#ff3355',
                             dark: '#b3122a'
                         }
@@ -28,24 +28,12 @@
     </script>
     <style>
         /* Custom Scrollbar for better aesthetics */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #E31837; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b3122a; 
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #E31837; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b3122a; }
         /* Prevent layout shift when body overflow is hidden */
-        body.menu-open {
-            overflow: hidden;
-            padding-right: 8px; /* Compensate for scrollbar width to prevent shift */
-        }
+        body.menu-open { overflow: hidden; padding-right: 8px; }
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased transition-all duration-300">
@@ -587,43 +575,67 @@
 
         // IndexedDB Setup for fast local storage (bdx)
         const dbName = "MirzakhilDB";
-        let db;
+        let db = null;
 
         const initDB = () => {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbName, 1);
-                request.onerror = () => reject("DB Error");
-                request.onsuccess = (event) => { db = event.target.result; resolve(db); };
-                request.onupgradeneeded = (event) => {
-                    db = event.target.result;
-                    if (!db.objectStoreNames.contains("accounts")) db.createObjectStore("accounts", { keyPath: "type" });
-                    if (!db.objectStoreNames.contains("chequecard")) db.createObjectStore("chequecard", { keyPath: "id" }); 
-                };
+                try {
+                    if (!window.indexedDB) {
+                        console.warn("IndexedDB not supported in this environment.");
+                        return resolve(null); // Resolve with null to bypass local storage safely
+                    }
+                    const request = indexedDB.open(dbName, 1);
+                    request.onerror = (e) => {
+                        console.warn("IndexedDB error:", e);
+                        resolve(null);
+                    };
+                    request.onsuccess = (event) => { 
+                        db = event.target.result; 
+                        resolve(db); 
+                    };
+                    request.onupgradeneeded = (event) => {
+                        let tempDb = event.target.result;
+                        if (!tempDb.objectStoreNames.contains("accounts")) tempDb.createObjectStore("accounts", { keyPath: "type" });
+                        if (!tempDb.objectStoreNames.contains("chequecard")) tempDb.createObjectStore("chequecard", { keyPath: "id" }); 
+                    };
+                } catch(e) {
+                    console.warn("IndexedDB Init Exception:", e);
+                    resolve(null); // Fail gracefully on local files
+                }
             });
         };
 
         const saveToLocal = (type, data) => {
-            if(!db) return;
-            if(type === 'chequecard') {
-                const tx = db.transaction("chequecard", "readwrite");
-                tx.objectStore("chequecard").put({ id: "all_data", data: data });
-            } else {
-                const tx = db.transaction("accounts", "readwrite");
-                tx.objectStore("accounts").put({ type: type, data: data });
-            }
+            try {
+                if(!db) return;
+                if(type === 'chequecard') {
+                    const tx = db.transaction("chequecard", "readwrite");
+                    tx.objectStore("chequecard").put({ id: "all_data", data: data });
+                } else {
+                    const tx = db.transaction("accounts", "readwrite");
+                    tx.objectStore("accounts").put({ type: type, data: data });
+                }
+            } catch(e) { console.warn("IDB Save Error", e); }
         };
 
         const loadFromLocal = (type) => {
             return new Promise((resolve) => {
-                if(!db) return resolve([]);
-                if(type === 'chequecard') {
-                    const req = db.transaction("chequecard", "readonly").objectStore("chequecard").get("all_data");
-                    req.onsuccess = () => resolve(req.result ? req.result.data : []);
-                    req.onerror = () => resolve([]);
-                } else {
-                    const req = db.transaction("accounts", "readonly").objectStore("accounts").get(type);
-                    req.onsuccess = () => resolve(req.result ? req.result.data : []);
-                    req.onerror = () => resolve([]);
+                try {
+                    if(!db) return resolve([]);
+                    if(type === 'chequecard') {
+                        const tx = db.transaction("chequecard", "readonly");
+                        const req = tx.objectStore("chequecard").get("all_data");
+                        req.onsuccess = () => resolve(req.result ? req.result.data : []);
+                        req.onerror = () => resolve([]);
+                    } else {
+                        const tx = db.transaction("accounts", "readonly");
+                        const req = tx.objectStore("accounts").get(type);
+                        req.onsuccess = () => resolve(req.result ? req.result.data : []);
+                        req.onerror = () => resolve([]);
+                    }
+                } catch(e) {
+                    console.warn("IDB Load Error", e);
+                    resolve([]);
                 }
             });
         };
@@ -790,6 +802,7 @@
                     ].reverse(); 
                     chequeCardItems = processCcData(data.chequecard || []).reverse();
 
+                    // Safely attempt to save to IndexedDB
                     saveToLocal("savings", savingsAccounts);
                     saveToLocal("cdsnd", cdSndAccounts);
                     saveToLocal("fdrDps", fdrDpsAccounts);
@@ -1530,6 +1543,12 @@
 
         function getCalculatedMonths() {
             if (!accountToClose) return 0;
+            
+            // For DPS, strictly use the tracked monthsPaid from the sheet!
+            if (accountToClose.type === 'DPS') {
+                return parseInt(accountToClose.monthsPaid) || 0;
+            }
+            
             let closeDateVal = document.getElementById('caCloseDate').value;
             let closeD = closeDateVal ? new Date(closeDateVal) : new Date();
             let openD = parseActionDate(accountToClose.openDate);
