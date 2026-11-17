@@ -239,7 +239,7 @@
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="#" class="menu-item block px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-ucbred font-medium transition" data-name="Dashboard">
                 <div class="flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     Dashboard
                 </div>
             </a>
@@ -399,9 +399,15 @@
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Linked A/C:</span> <span id="caLinkedAccount" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Amount:</span> <span id="caAmount" class="font-bold text-gray-900"></span></div>
                     <div class="flex justify-between"><span class="font-medium text-gray-500">Period:</span> <span id="caPeriod" class="font-bold text-gray-900"></span></div>
+                    
                     <div id="caDpsInfo" class="hidden flex-col space-y-2 mt-2 pt-2 border-t border-gray-100">
                         <div class="flex justify-between"><span class="font-medium text-gray-500">Months Deposited:</span> <span id="caMonthsPaid" class="font-bold text-ucbred"></span></div>
                         <div class="flex justify-between"><span class="font-medium text-gray-500">Total Deposited:</span> <span id="caTotalDeposited" class="font-bold text-gray-900"></span></div>
+                    </div>
+
+                    <div id="caFdrInfo" class="hidden flex-col space-y-2 mt-2 pt-2 border-t border-gray-100">
+                        <div class="flex justify-between"><span class="font-medium text-gray-500">Renewal Cycle:</span> <span id="caFdrCycle" class="font-bold text-purple-700"></span></div>
+                        <div class="flex justify-between"><span class="font-medium text-gray-500">Next Maturity:</span> <span id="caFdrMaturity" class="font-bold text-ucbred"></span></div>
                     </div>
                 </div>
 
@@ -1107,7 +1113,9 @@
                 });
             } else {
                 let list = type === 'Savings' ? [...savingsAccounts] : [...cdSndAccounts];
-                if (currentSortOrder === 'oldest') list.reverse();
+                if (currentSortOrder === 'oldest') {
+                    list.reverse();
+                }
                 accountListTotal.textContent = `Total ${type} - ${list.length}`;
                 
                 list.forEach((acc, i) => {
@@ -1601,10 +1609,46 @@
             document.getElementById('caPeriod').textContent = accountToClose.period;
             
             const dpsInfoBlock = document.getElementById('caDpsInfo');
+            const fdrInfoBlock = document.getElementById('caFdrInfo');
+            
             if (accountToClose.type === 'DPS') {
                 if(dpsInfoBlock) { dpsInfoBlock.classList.remove('hidden'); dpsInfoBlock.classList.add('flex'); }
+                if(fdrInfoBlock) { fdrInfoBlock.classList.add('hidden'); fdrInfoBlock.classList.remove('flex'); }
+            } else if (accountToClose.type === 'FDR') {
+                if(dpsInfoBlock) { dpsInfoBlock.classList.add('hidden'); dpsInfoBlock.classList.remove('flex'); }
+                if(fdrInfoBlock) { fdrInfoBlock.classList.remove('hidden'); fdrInfoBlock.classList.add('flex'); }
+                
+                // Calculate FDR renewal and maturity
+                if (accountToClose.status === 'Closed') {
+                    document.getElementById('caFdrCycle').textContent = '-';
+                    document.getElementById('caFdrMaturity').textContent = 'Account Closed';
+                } else {
+                    let totalM = parseInt(accountToClose.totalMonths) || 0;
+                    if (totalM > 0) {
+                        let openD = parseActionDate(accountToClose.openDate);
+                        let today = new Date(); today.setHours(0,0,0,0);
+                        let matDate = new Date(openD);
+                        matDate.setMonth(matDate.getMonth() + totalM);
+                        
+                        let completedCycles = 0;
+                        while (matDate <= today) {
+                            completedCycles++;
+                            matDate.setMonth(matDate.getMonth() + totalM);
+                        }
+                        
+                        let daysRemaining = Math.ceil((matDate - today) / 86400000);
+                        let cycleText = completedCycles > 0 ? `${completedCycles} Time(s) Completed` : 'First Cycle';
+                        
+                        document.getElementById('caFdrCycle').textContent = cycleText;
+                        document.getElementById('caFdrMaturity').textContent = `${daysRemaining} Day(s) Remaining`;
+                    } else {
+                        document.getElementById('caFdrCycle').textContent = 'N/A';
+                        document.getElementById('caFdrMaturity').textContent = 'N/A';
+                    }
+                }
             } else {
                 if(dpsInfoBlock) { dpsInfoBlock.classList.add('hidden'); dpsInfoBlock.classList.remove('flex'); }
+                if(fdrInfoBlock) { fdrInfoBlock.classList.add('hidden'); fdrInfoBlock.classList.remove('flex'); }
             }
             
             updateModalDynamicInfo();
