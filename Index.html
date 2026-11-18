@@ -701,33 +701,51 @@
             return new Date();
         };
 
+        // Banking Standard Month Adder (handles 28/29/30/31st edge cases safely)
+        const safeAddMonths = (date, months) => {
+            let d = new Date(date);
+            let expectedMonth = (d.getMonth() + months) % 12;
+            if (expectedMonth < 0) expectedMonth += 12;
+            d.setMonth(d.getMonth() + months);
+            if (d.getMonth() !== expectedMonth) d.setDate(0);
+            return d;
+        };
+
         const calculateDpsMonthsPaid = (dateStr, totalM) => {
             let openD = parseActionDate(dateStr);
             if (isNaN(openD.getTime())) return 1;
-            let today = new Date(); today.setHours(0,0,0,0);
-            let mPaid = 1; let tempDate = new Date(openD);
+            let today = new Date(); 
+            today.setHours(23, 59, 59, 999);
+            
+            let mPaid = 0;
             while (true) {
-                tempDate.setMonth(tempDate.getMonth() + 1);
-                let daysDiff = Math.ceil((tempDate - today) / 86400000);
-                if (daysDiff >= -5) break;
-                mPaid++;
+                let nextDue = safeAddMonths(openD, mPaid);
+                if (nextDue <= today) {
+                    mPaid++;
+                } else {
+                    break;
+                }
                 if (totalM && mPaid >= totalM) break;
-                if (mPaid > 600) break;
+                if (mPaid > 1200) break;
             }
-            return mPaid;
+            return Math.max(1, mPaid);
         };
 
         const calculateFdrMonthsPaid = (dateStr, totalM) => {
             if (!totalM) return 0;
             let openD = parseActionDate(dateStr);
             if (isNaN(openD.getTime())) return 0;
-            let today = new Date(); today.setHours(0,0,0,0);
-            let mPaid = 0; let tempDate = new Date(openD);
+            let today = new Date(); 
+            today.setHours(23, 59, 59, 999);
+            
+            let mPaid = 0; 
             while (true) {
-                tempDate.setMonth(tempDate.getMonth() + totalM);
-                let daysDiff = Math.ceil((tempDate - today) / 86400000);
-                if (daysDiff >= -5) break; 
-                mPaid += totalM;
+                let nextCycle = safeAddMonths(openD, mPaid + totalM);
+                if (nextCycle <= today) {
+                    mPaid += totalM;
+                } else {
+                    break;
+                }
                 if (mPaid > 1200) break; 
             }
             return mPaid;
@@ -1248,16 +1266,16 @@
                     
                     if (totalM > 0 && mPaid >= totalM) {
                         isMaturedDps = true;
-                        eventDate.setMonth(eventDate.getMonth() + totalM);
+                        eventDate = safeAddMonths(eventDate, totalM);
                     } else {
-                        eventDate.setMonth(eventDate.getMonth() + mPaid);
+                        eventDate = safeAddMonths(eventDate, mPaid);
                         
                         let tempDue = new Date(eventDate);
                         while (true) {
                             let diff = Math.ceil((tempDue - today) / 86400000);
                             if (diff <= 5) { 
                                 overdueCount++;
-                                tempDue.setMonth(tempDue.getMonth() + 1);
+                                tempDue = safeAddMonths(tempDue, 1);
                                 if (overdueCount > 1200) break;
                             } else break;
                         }
@@ -1265,7 +1283,7 @@
                 } else if (acc.type === 'FDR') {
                     let mPaid = parseInt(acc.monthsPaid) || 0;
                     let totalM = parseInt(acc.totalMonths) || 0;
-                    if (totalM > 0) eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
+                    if (totalM > 0) eventDate = safeAddMonths(eventDate, mPaid + totalM);
                 }
 
                 const daysDiff = Math.ceil((eventDate - today) / 86400000);
@@ -1423,23 +1441,23 @@
                 let totalM = parseInt(acc.totalMonths) || 0;
                 if (totalM > 0 && mPaid >= totalM) {
                     isMaturedDps = true;
-                    eventDate.setMonth(eventDate.getMonth() + totalM);
+                    eventDate = safeAddMonths(eventDate, totalM);
                 } else {
-                    eventDate.setMonth(eventDate.getMonth() + mPaid);
+                    eventDate = safeAddMonths(eventDate, mPaid);
                     let tempDue = new Date(eventDate);
                     const today = new Date(); today.setHours(0,0,0,0);
                     while (true) {
                         let diff = Math.ceil((tempDue - today) / 86400000);
                         if (diff <= 5) {
                             overdueCount++;
-                            tempDue.setMonth(tempDue.getMonth() + 1);
+                            tempDue = safeAddMonths(tempDue, 1);
                         } else break;
                     }
                 }
             } else if (acc.type === 'FDR') {
                 let mPaid = parseInt(acc.monthsPaid) || 0;
                 let totalM = parseInt(acc.totalMonths) || 0;
-                if (totalM > 0) eventDate.setMonth(eventDate.getMonth() + mPaid + totalM);
+                if (totalM > 0) eventDate = safeAddMonths(eventDate, mPaid + totalM);
             }
             
             currentActionAccount = { ...acc, eventDate: eventDate };
@@ -1670,13 +1688,12 @@
                     if (totalM > 0) {
                         let openD = parseActionDate(accountToClose.openDate);
                         let today = new Date(); today.setHours(0,0,0,0);
-                        let matDate = new Date(openD);
-                        matDate.setMonth(matDate.getMonth() + totalM);
+                        let matDate = safeAddMonths(openD, totalM);
                         
                         let completedCycles = 0;
                         while (matDate <= today) {
                             completedCycles++;
-                            matDate.setMonth(matDate.getMonth() + totalM);
+                            matDate = safeAddMonths(matDate, totalM);
                         }
                         
                         let daysRemaining = Math.ceil((matDate - today) / 86400000);
