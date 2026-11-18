@@ -145,14 +145,14 @@
             <div class="lg:col-span-1 space-y-8">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-ucbred flex items-center">
+                        <h2 onclick="window.showActionPage()" class="text-lg font-bold text-ucbred flex items-center cursor-pointer hover:underline" title="Click to view all actions">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Action Needed
                         </h2>
                     </div>
                     
-                    <!-- Alert List Container -->
-                    <div id="alertsContainer" class="flex-1 overflow-y-auto pr-2 space-y-4">
+                    <!-- Alert List Container (Restricted Height & Scrollable) -->
+                    <div id="alertsContainer" class="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[380px]">
                         <!-- Alerts will be injected here via JavaScript -->
                     </div>
                 </div>
@@ -166,7 +166,7 @@
             <!-- Header area -->
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center">
-                    <button id="backToDashboardBtn" class="mr-4 p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-ucbred transition" title="Back to Dashboard">
+                    <button onclick="window.showDashboard()" class="mr-4 p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-ucbred transition" title="Back to Dashboard">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     </button>
                     <h1 id="accountListTitle" class="text-3xl font-bold text-gray-900">Savings</h1>
@@ -209,6 +209,21 @@
                         <!-- Rows injected via JS -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Action Page View (Full Page for Actions) -->
+        <div id="actionPageView" class="hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="window.showDashboard()" class="mr-4 p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-ucbred transition" title="Back to Dashboard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </button>
+                <h1 class="text-3xl font-bold text-gray-900">All Pending Actions</h1>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div id="fullAlertsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Cloned alerts go here -->
+                </div>
             </div>
         </div>
 
@@ -817,7 +832,7 @@
                     updateDashboardUI();
                     renderAlerts();
                     
-                    if (!accountListView.classList.contains('hidden')) renderTableData(accountListTitle.textContent);
+                    if (!document.getElementById('accountListView').classList.contains('hidden')) renderTableData(document.getElementById('accountListTitle').textContent);
                     if(!silent) showToast('Data synced successfully!', 'success');
                 }
             } catch(e) {
@@ -918,12 +933,38 @@
             }
             closeMenu();
         });
+        
+        // --- Navigation Logic properly bound to Window ---
+        window.showDashboard = function() {
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('accountListView').classList.add('hidden');
+            document.getElementById('actionPageView').classList.add('hidden');
+        };
 
+        window.showAccountList = function(title) {
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('accountListView').classList.remove('hidden');
+            document.getElementById('actionPageView').classList.add('hidden');
+            document.getElementById('accountListTitle').textContent = title;
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            
+            if (title === 'Cheque/Card') {
+                document.getElementById('addReqBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('addReqBtn').classList.add('hidden');
+            }
+
+            renderTableData(title);
+        };
+
+        window.showActionPage = function() {
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('accountListView').classList.add('hidden');
+            document.getElementById('actionPageView').classList.remove('hidden');
+        };
+        
         // Attach event listeners to all menu items
-        const dashboardView = document.getElementById('dashboardView');
-        const accountListView = document.getElementById('accountListView');
-        const accountListTitle = document.getElementById('accountListTitle');
-        const backToDashboardBtn = document.getElementById('backToDashboardBtn');
         const accountTableBody = document.getElementById('accountTableBody');
         
         // --- Real-time Search Logic ---
@@ -951,29 +992,6 @@
             searchInput.focus();
         });
 
-        function showDashboard() {
-            dashboardView.classList.remove('hidden');
-            accountListView.classList.add('hidden');
-        }
-
-        function showAccountList(title) {
-            dashboardView.classList.add('hidden');
-            accountListView.classList.remove('hidden');
-            accountListTitle.textContent = title;
-            searchInput.value = '';
-            clearSearchBtn.classList.add('hidden');
-            
-            if (title === 'Cheque/Card') {
-                document.getElementById('addReqBtn').classList.remove('hidden');
-            } else {
-                document.getElementById('addReqBtn').classList.add('hidden');
-            }
-
-            renderTableData(title);
-        }
-
-        backToDashboardBtn.addEventListener('click', showDashboard);
-
         // Global Data Structures
         let savingsAccounts = [];
         let cdSndAccounts = [];
@@ -987,7 +1005,7 @@
             document.getElementById('sortIcon').innerHTML = currentSortOrder === 'newest'
                 ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>'
                 : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m-4 4l4 4m0 0l4-4m-4 4V4"></path>';
-            renderTableData(accountListTitle.textContent);
+            renderTableData(document.getElementById('accountListTitle').textContent);
         });
 
         function renderTableData(type) {
@@ -998,15 +1016,15 @@
             
             if (type === 'Cheque/Card') {
                 tableHeaderRow.innerHTML = `
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Request Date</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">A/C Number</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Leaf / Card</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Courier Rcv</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Delivered</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Request Date</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">A/C Number</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Leaf / Card</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Courier Rcv</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Delivered</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 `;
                 let list = [...chequeCardItems];
                 if (currentSortOrder === 'oldest') list.reverse();
@@ -1022,15 +1040,15 @@
                     if(acc.status === 'Delivered') badgeClass = "bg-green-100 text-green-800";
 
                     tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${acc.reqDate}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">${acc.itemType}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">${acc.acNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.details}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.courierDate || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.deliveryDate || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900">${acc.reqDate}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm font-bold text-purple-600">${acc.itemType}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">${acc.acNumber}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.details}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.courierDate || '-'}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.deliveryDate || '-'}</td>
+                        <td class="px-2 py-3 whitespace-nowrap">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${acc.status}</span>
                         </td>
                     `;
@@ -1041,25 +1059,25 @@
 
             if (isTermDeposit) {
                 tableHeaderRow.innerHTML = `
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opening Date</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Title</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile Number</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Remaining</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opening Date</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Title</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile Number</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Remaining</th>
                 `;
             } else {
                 tableHeaderRow.innerHTML = `
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opening Date</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Title</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer ID</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile Number</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sl No</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opening Date</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Title</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Account Number</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer ID</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile Number</th>
+                    <th scope="col" class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 `;
             }
 
@@ -1091,23 +1109,23 @@
                     let imoIcon = acc.hasImo !== false ? `<svg title="IMO" class="w-6 h-6 mr-2 flex-shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.667C8.636 2.667 2.667 8.04 2.667 14.667c0 4.146 2.292 7.781 5.833 10.02v4.646L13.167 27.2c.917.208 1.875.333 2.833.333 7.364 0 13.333-5.373 13.333-12s-5.969-12-13.333-12z" fill="#0E71EA"/><text x="16.5" y="19" font-family="sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">imo</text></svg>` : '';
 
                     tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${acc.openDate}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.amount}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.period}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900">${acc.openDate}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.amount}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.period}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                             <div class="flex items-center">
                                 ${waIcon}
                                 ${imoIcon}
                                 <span>${acc.mobile}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-2 py-3 whitespace-nowrap">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusBadge}">${statusText}</span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-ucbred">${remainingText.trim()}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm font-bold text-ucbred">${remainingText.trim()}</td>
                     `;
                     accountTableBody.appendChild(tr);
                 });
@@ -1126,19 +1144,19 @@
                     let imoIcon = acc.hasImo !== false ? `<svg title="IMO" class="w-6 h-6 mr-2 flex-shrink-0" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.667C8.636 2.667 2.667 8.04 2.667 14.667c0 4.146 2.292 7.781 5.833 10.02v4.646L13.167 27.2c.917.208 1.875.333 2.833.333 7.364 0 13.333-5.373 13.333-12s-5.969-12-13.333-12z" fill="#0E71EA"/><text x="16.5" y="19" font-family="sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">imo</text></svg>` : '';
 
                     tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${acc.openDate}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${acc.customerId}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900">${acc.openDate}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.id}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.customerId}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                             <div class="flex items-center">
                                 ${waIcon}
                                 ${imoIcon}
                                 <span>${acc.mobile}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-2 py-3 whitespace-nowrap">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${acc.status}</span>
                         </td>
                     `;
@@ -1152,13 +1170,13 @@
                 e.preventDefault();
                 const name = item.getAttribute('data-name');
                 if(name === 'Dashboard') { 
-                    showDashboard();
+                    window.showDashboard();
                 } else if(name === 'Savings Account' || name === 'CD / SND Account') {
-                    showAccountList(name === 'Savings Account' ? 'Savings' : 'CD/SND');
+                    window.showAccountList(name === 'Savings Account' ? 'Savings' : 'CD/SND');
                 } else if(name === 'FDR (Fixed Deposit)' || name === 'DPS (Deposit Pension)') {
-                    showAccountList(name === 'FDR (Fixed Deposit)' ? 'FDR' : 'DPS');
+                    window.showAccountList(name === 'FDR (Fixed Deposit)' ? 'FDR' : 'DPS');
                 } else if(name === 'Cheque/Card') {
-                    showAccountList('Cheque/Card');
+                    window.showAccountList('Cheque/Card');
                 } else {
                     showToast('Coming Soon!');
                 }
@@ -1179,9 +1197,11 @@
 
         // Render Alerts Logic (Dynamically generated from FDR & DPS accounts)
         const alertsContainer = document.getElementById('alertsContainer');
+        const fullAlertsContainer = document.getElementById('fullAlertsContainer');
         
         function renderAlerts() {
             alertsContainer.innerHTML = '';
+            if (fullAlertsContainer) fullAlertsContainer.innerHTML = '';
             
             let visibleAccounts = [];
             const today = new Date();
@@ -1252,6 +1272,7 @@
 
             if (visibleAccounts.length === 0) {
                 alertsContainer.innerHTML = `<p class="text-gray-500 text-sm italic">No pending actions.</p>`;
+                if (fullAlertsContainer) fullAlertsContainer.innerHTML = `<p class="text-gray-500 text-sm italic col-span-full">No pending actions.</p>`;
                 return;
             }
 
@@ -1262,10 +1283,11 @@
             let sortedAccounts = [...normalAccounts, ...pendingAccounts];
 
             sortedAccounts.forEach(account => {
+                let card = '';
                 // Render Cheque/Card specific card
                 if (account.alertType === 'chequecard') {
                     let btnText = account.status === 'Courier Pending' ? 'Courier Recv' : 'Deliver to Cust.';
-                    const card = `
+                    card = `
                         <div class="action-card flex items-start p-3 rounded-lg border transition bg-purple-50 border-purple-100 hover:border-purple-200">
                             <div class="flex-shrink-0 mt-1">
                                 <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs bg-purple-100 text-purple-700">
@@ -1292,64 +1314,64 @@
                             </div>
                         </div>
                     `;
-                    alertsContainer.insertAdjacentHTML('beforeend', card);
-                    return;
-                }
-
-                // Render normal DPS/FDR action card
-                const daysDiff = Math.ceil((account.eventDate - today) / 86400000);
-                let daysLabel = daysDiff === 0 ? 'Today' : (daysDiff > 0 ? `In ${daysDiff} day${daysDiff > 1 ? 's' : ''}` : `${Math.abs(daysDiff)} day(s) overdue`);
-                
-                let cardStyle = "bg-gray-50 border-gray-100 hover:border-gray-200";
-                
-                if (account.isPending) {
-                    let pendingStr = Math.abs(daysDiff) > 0 ? Math.abs(daysDiff) + ' days' : 'Added today';
-                    daysLabel = `Pending (${pendingStr})`;
-                    cardStyle = "bg-yellow-50 border-yellow-200 opacity-90 hover:border-yellow-300";
-                }
-                
-                const iconBg = account.type === 'FDR' ? 'bg-red-100 text-ucbred' : 'bg-blue-100 text-blue-600';
-                
-                let amountDisplay = account.amount;
-                if (account.type === 'FDR') {
-                    amountDisplay = `Total: ${account.amount}`;
-                } else if (account.type === 'DPS') {
-                    let amt = parseFloat(String(account.amount).replace(/[^0-9.]/g, '')) || 0;
-                    if (account.overdueCount > 1) {
-                        amountDisplay = `<span class="text-ucbred font-bold">Due: ৳ ${(amt * account.overdueCount).toLocaleString('en-IN')} (${account.overdueCount} x ${account.amount})</span>`;
-                    } else {
-                        amountDisplay = `Monthly: ${account.amount}`;
+                } else {
+                    // Render normal DPS/FDR action card
+                    const daysDiff = Math.ceil((account.eventDate - today) / 86400000);
+                    let daysLabel = daysDiff === 0 ? 'Today' : (daysDiff > 0 ? `In ${daysDiff} day${daysDiff > 1 ? 's' : ''}` : `${Math.abs(daysDiff)} day(s) overdue`);
+                    
+                    let cardStyle = "bg-gray-50 border-gray-100 hover:border-gray-200";
+                    
+                    if (account.isPending) {
+                        let pendingStr = Math.abs(daysDiff) > 0 ? Math.abs(daysDiff) + ' days' : 'Added today';
+                        daysLabel = `Pending (${pendingStr})`;
+                        cardStyle = "bg-yellow-50 border-yellow-200 opacity-90 hover:border-yellow-300";
                     }
-                }
+                    
+                    const iconBg = account.type === 'FDR' ? 'bg-red-100 text-ucbred' : 'bg-blue-100 text-blue-600';
+                    
+                    let amountDisplay = account.amount;
+                    if (account.type === 'FDR') {
+                        amountDisplay = `Total: ${account.amount}`;
+                    } else if (account.type === 'DPS') {
+                        let amt = parseFloat(String(account.amount).replace(/[^0-9.]/g, '')) || 0;
+                        if (account.overdueCount > 1) {
+                            amountDisplay = `<span class="text-ucbred font-bold">Due: ৳ ${(amt * account.overdueCount).toLocaleString('en-IN')} (${account.overdueCount} x ${account.amount})</span>`;
+                        } else {
+                            amountDisplay = `Monthly: ${account.amount}`;
+                        }
+                    }
 
-                const card = `
-                    <div class="action-card flex items-start p-3 rounded-lg border transition ${cardStyle}">
-                        <div class="flex-shrink-0 mt-1">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${iconBg}">
-                                ${account.type}
-                            </div>
-                        </div>
-                        <div class="ml-4 flex-1">
-                            <div class="flex items-center justify-between">
-                                <h4 class="text-sm font-bold text-gray-900">${account.customer}</h4>
-                                <span class="text-xs font-semibold px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 shadow-sm">${daysLabel}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1 flex justify-between">
-                                <span>A/C: ${account.id}</span>
-                                <span class="font-medium text-gray-700">${amountDisplay}</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-2">
-                                <div class="text-xs font-medium ${account.isPending ? 'text-yellow-700' : 'text-ucbred'}">
-                                    Action: ${account.actionStatus} (${formatDate(account.eventDate)})
+                    card = `
+                        <div class="action-card flex items-start p-3 rounded-lg border transition ${cardStyle}">
+                            <div class="flex-shrink-0 mt-1">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${iconBg}">
+                                    ${account.type}
                                 </div>
-                                <button onclick="requestComplete('${account.id}')" class="text-xs bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded transition shadow-sm">
-                                    Action
-                                </button>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-sm font-bold text-gray-900">${account.customer}</h4>
+                                    <span class="text-xs font-semibold px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 shadow-sm">${daysLabel}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                                    <span>A/C: ${account.id}</span>
+                                    <span class="font-medium text-gray-700">${amountDisplay}</span>
+                                </div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="text-xs font-medium ${account.isPending ? 'text-yellow-700' : 'text-ucbred'}">
+                                        Action: ${account.actionStatus} (${formatDate(account.eventDate)})
+                                    </div>
+                                    <button onclick="requestComplete('${account.id}')" class="text-xs bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded transition shadow-sm">
+                                        Action
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+                
                 alertsContainer.insertAdjacentHTML('beforeend', card);
+                if (fullAlertsContainer) fullAlertsContainer.insertAdjacentHTML('beforeend', card);
             });
         }
 
@@ -1461,8 +1483,8 @@
                     updateDashboardUI();
                     showToast(acc.type === 'FDR' ? 'FDR closed successfully!' : 'Payment confirmed & action complete!', 'success');
                     
-                    if (!accountListView.classList.contains('hidden') && (accountListTitle.textContent === 'DPS' || accountListTitle.textContent === 'FDR')) {
-                        renderTableData(accountListTitle.textContent);
+                    if (!document.getElementById('accountListView').classList.contains('hidden') && (document.getElementById('accountListTitle').textContent === 'DPS' || document.getElementById('accountListTitle').textContent === 'FDR')) {
+                        renderTableData(document.getElementById('accountListTitle').textContent);
                     }
                 }
             }
@@ -1537,7 +1559,7 @@
             });
 
             renderAlerts();
-            if (!accountListView.classList.contains('hidden') && accountListTitle.textContent === 'Cheque/Card') {
+            if (!document.getElementById('accountListView').classList.contains('hidden') && document.getElementById('accountListTitle').textContent === 'Cheque/Card') {
                 renderTableData('Cheque/Card');
             }
         });
@@ -1580,7 +1602,7 @@
             calculateMaturity();
         });
 
-        function openCloseAccountModal(id) {
+        window.openCloseAccountModal = function(id) {
             accountToClose = fdrDpsAccounts.find(a => String(a.id) === String(id));
             if(!accountToClose) return;
             
@@ -1660,7 +1682,7 @@
             closeAccountModalContent.classList.remove('scale-95');
             closeAccountModalContent.classList.add('scale-100');
             document.body.classList.add('menu-open'); 
-        }
+        };
 
         function calculateMaturity() {
             if (!accountToClose) return;
@@ -1679,7 +1701,10 @@
                 grossInterest = (principal * rate * months) / 1200;
             } else if (accountToClose.type === 'DPS') {
                 principal = amount * months;
-                grossInterest = (amount * rate * months * (months + 1)) / 2400;
+                // Standard BD Bank Compound Interest Formula for DPS
+                let R = rate / 1200;
+                let maturityAmount = amount * (Math.pow(1 + R, months) - 1) / R * (1 + R);
+                grossInterest = maturityAmount - principal;
             }
 
             let taxAmount = grossInterest * tinRate;
@@ -1739,7 +1764,7 @@
         const nrAcNumber = document.getElementById('nrAcNumber');
         const nrAcResults = document.getElementById('nrAcResults');
 
-        function openNewReqModal() {
+        window.openNewReqModal = function() {
             document.getElementById('newReqForm').reset();
             const d = new Date();
             document.getElementById('nrDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1749,14 +1774,14 @@
             newReqModalContent.classList.remove('scale-95');
             newReqModalContent.classList.add('scale-100');
             document.body.classList.add('menu-open');
-        }
+        };
 
-        function closeNewReqModal() {
+        window.closeNewReqModal = function() {
             newReqModal.classList.add('opacity-0', 'pointer-events-none');
             newReqModalContent.classList.add('scale-95');
             newReqModalContent.classList.remove('scale-100');
             document.body.classList.remove('menu-open');
-        }
+        };
 
         document.getElementById('nrType').addEventListener('change', (e) => {
             if (e.target.value === 'Cheque') {
@@ -1848,7 +1873,7 @@
             
             updateDashboardUI();
             renderAlerts();
-            if (!accountListView.classList.contains('hidden') && accountListTitle.textContent === 'Cheque/Card') {
+            if (!document.getElementById('accountListView').classList.contains('hidden') && document.getElementById('accountListTitle').textContent === 'Cheque/Card') {
                 renderTableData('Cheque/Card');
             }
             
@@ -1884,7 +1909,7 @@
         const naCdSndType = document.getElementById('naCdSndType');
         const naDate = document.getElementById('naDate');
 
-        function openNewAccountModal() {
+        window.openNewAccountModal = function() {
             newAccountForm.reset();
             const d = new Date();
             naDate.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1894,14 +1919,14 @@
             newAccountModalContent.classList.remove('scale-95');
             newAccountModalContent.classList.add('scale-100');
             document.body.classList.add('menu-open'); 
-        }
+        };
 
-        function closeNewAccountModal() {
+        window.closeNewAccountModal = function() {
             newAccountModal.classList.add('opacity-0', 'pointer-events-none');
             newAccountModalContent.classList.add('scale-95');
             newAccountModalContent.classList.remove('scale-100');
             document.body.classList.remove('menu-open'); 
-        }
+        };
 
         closeNewAccountBtn.addEventListener('click', closeNewAccountModal);
         cancelNewAccountBtn.addEventListener('click', closeNewAccountModal);
@@ -2124,7 +2149,7 @@
                 updateDashboardUI();
                 renderAlerts();
                 
-                if (!accountListView.classList.contains('hidden')) renderTableData(accountListTitle.textContent);
+                if (!document.getElementById('accountListView').classList.contains('hidden')) renderTableData(document.getElementById('accountListTitle').textContent);
             } catch (e) { console.error("Local DB Init failed", e); }
             
             syncData(true);
@@ -2148,10 +2173,10 @@
             sidebarUserInitials.textContent = initials.toUpperCase();
         }
 
-        function logout() {
+        window.logout = function() {
             sessionStorage.removeItem('mirzakhilUser');
             location.reload(); 
-        }
+        };
 
         const loggedInUser = sessionStorage.getItem('mirzakhilUser');
         if (loggedInUser) {
