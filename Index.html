@@ -254,7 +254,7 @@
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="#" class="menu-item block px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-ucbred font-medium transition" data-name="Dashboard">
                 <div class="flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     Dashboard
                 </div>
             </a>
@@ -808,13 +808,22 @@
                 if(!silent) showToast('Please add Google Script URL in code first!', 'error');
                 return;
             }
+            
+            const loggedInUser = sessionStorage.getItem('mirzakhilUser');
+            if (!loggedInUser) return;
+            const userObj = JSON.parse(loggedInUser);
+
             if(!silent) refreshIcon.classList.add('animate-spin');
             
             try {
-                const response = await fetch(GOOGLE_APP_SCRIPT_URL);
-                const data = await response.json();
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'fetchData', token: userObj.token })
+                });
+                const result = await response.json();
                 
-                if (data && !data.status) {
+                if (result && result.status === 'success') {
+                    const data = result.data;
                     savingsAccounts = processSheetData(data.savings || []).reverse();
                     cdSndAccounts = processSheetData(data.cdsnd || []).reverse();
                     fdrDpsAccounts = [
@@ -834,6 +843,11 @@
                     
                     if (!document.getElementById('accountListView').classList.contains('hidden')) renderTableData(document.getElementById('accountListTitle').textContent);
                     if(!silent) showToast('Data synced successfully!', 'success');
+                } else if (result && result.status === 'unauthorized') {
+                    showToast('Session expired. Please login again.', 'error');
+                    window.logout();
+                } else {
+                    if(!silent) showToast(result ? result.message : 'Error syncing data!', 'error');
                 }
             } catch(e) {
                 if(!silent) showToast('Error syncing data!', 'error');
@@ -846,14 +860,24 @@
 
         async function sendToGoogleSheet(accountData, sheetName, action = 'add') {
             if(!GOOGLE_APP_SCRIPT_URL) return false;
+            
+            const loggedInUser = sessionStorage.getItem('mirzakhilUser');
+            if (!loggedInUser) return false;
+            const userObj = JSON.parse(loggedInUser);
+
             try {
-                await fetch(GOOGLE_APP_SCRIPT_URL, {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: sheetName, action: action, data: accountData })
+                    body: JSON.stringify({ type: sheetName, action: action, data: accountData, token: userObj.token })
                 });
-                return true;
+                const result = await response.json();
+                
+                if (result && result.status === 'unauthorized') {
+                    window.logout();
+                    return false;
+                }
+                
+                return result && result.status === 'success';
             } catch(e) {
                 console.error('Error saving to sheets', e);
                 return false;
@@ -1386,7 +1410,7 @@
         
         let currentActionAccount = null;
 
-        function requestComplete(id) {
+        window.requestComplete = function(id) {
             let acc = fdrDpsAccounts.find(a => String(a.id) === String(id));
             if (!acc) return;
             
@@ -1441,7 +1465,7 @@
             confirmModalContent.classList.remove('scale-95');
             confirmModalContent.classList.add('scale-100');
             document.body.classList.add('menu-open');
-        }
+        };
 
         function closeConfirmModal() {
             confirmModal.classList.add('opacity-0', 'pointer-events-none');
@@ -1543,9 +1567,8 @@
 
             saveToLocal('chequecard', chequeCardItems);
             
-            // NOTE: Sending pure payload object for update so it matches the ID in the Sheet loop
             let sheetPayload = {...cc};
-            sheetPayload.acNumber = "'" + cc.acNumber; // Prevent A/C number from converting to Scientific notation
+            sheetPayload.acNumber = "'" + cc.acNumber; 
             
             document.getElementById('cancelCcConfirmBtn').click(); 
             showToast('Status updated & saving to sheet...', 'info');
@@ -1553,7 +1576,7 @@
             sendToGoogleSheet(sheetPayload, 'chequecard', 'update').then((isSaved) => {
                 if(isSaved) {
                     showToast('Status successfully updated in Sheet!', 'success');
-                    syncData(true); // Quickly sync to ensure data is completely matched and correct
+                    syncData(true); 
                 }
                 else showToast('Error saving to Sheet!', 'error');
             });
@@ -1574,7 +1597,6 @@
         function getCalculatedMonths() {
             if (!accountToClose) return 0;
             
-            // For DPS, strictly use the tracked monthsPaid from the sheet!
             if (accountToClose.type === 'DPS') {
                 return parseInt(accountToClose.monthsPaid) || 0;
             }
@@ -1640,7 +1662,6 @@
                 if(dpsInfoBlock) { dpsInfoBlock.classList.add('hidden'); dpsInfoBlock.classList.remove('flex'); }
                 if(fdrInfoBlock) { fdrInfoBlock.classList.remove('hidden'); fdrInfoBlock.classList.add('flex'); }
                 
-                // Calculate FDR renewal and maturity
                 if (accountToClose.status === 'Closed') {
                     document.getElementById('caFdrCycle').textContent = '-';
                     document.getElementById('caFdrMaturity').textContent = 'Account Closed';
@@ -1701,7 +1722,6 @@
                 grossInterest = (principal * rate * months) / 1200;
             } else if (accountToClose.type === 'DPS') {
                 principal = amount * months;
-                // Standard BD Bank Compound Interest Formula for DPS
                 let R = rate / 1200;
                 let maturityAmount = amount * (Math.pow(1 + R, months) - 1) / R * (1 + R);
                 grossInterest = maturityAmount - principal;
@@ -1845,7 +1865,7 @@
             const createCcReq = (iType, iDetails) => {
                 let reqId = Date.now().toString() + Math.floor(Math.random()*1000);
                 let sheetPayload = {
-                    id: "'" + reqId, // Added with apostrophe correctly during manual ADD
+                    id: "'" + reqId, 
                     reqDate: displayDate,
                     itemType: iType,
                     customer: cusName,
@@ -1950,7 +1970,7 @@
             fieldAmountPeriod.classList.add('hidden');
             fieldLinkedAccount.classList.add('hidden');
 
-            document.getElementById('naRequisition').value = 'None'; // Reset
+            document.getElementById('naRequisition').value = 'None'; 
 
             if (type === 'savings') {
                 fieldCustomerId.classList.remove('hidden');
@@ -2198,27 +2218,21 @@
                 loginBtn.disabled = true;
 
                 try {
-                    const response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                    const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'login', uid: uid, pass: pass })
+                    });
                     const data = await response.json();
                     
-                    if (data && !data.status) { 
-                        const users = data.users || [];
-                        const user = users.find(u => String(u.uid) === uid && String(u.pass) === pass);
-                        
-                        if (user) {
-                            if (String(user.status).toLowerCase() === 'blocked') {
-                                showToast('This account has been Blocked!', 'error');
-                            } else {
-                                sessionStorage.setItem('mirzakhilUser', JSON.stringify({name: user.name, uid: user.uid}));
-                                setLoggedInUI(user.name);
-                                loginOverlay.classList.add('hidden');
-                                showToast('Login Successful!', 'success');
-                                initializeApp();
-                            }
-                        } else {
-                            showToast('Invalid UID or Password!', 'error');
-                        }
-                    } else { showToast('Error connecting to database!', 'error'); }
+                    if (data && data.status === 'success') { 
+                        sessionStorage.setItem('mirzakhilUser', JSON.stringify({name: data.name, uid: data.uid, token: data.token}));
+                        setLoggedInUI(data.name);
+                        loginOverlay.classList.add('hidden');
+                        showToast('Login Successful!', 'success');
+                        initializeApp();
+                    } else { 
+                        showToast(data.message || 'Invalid UID or Password!', 'error'); 
+                    }
                 } catch (err) {
                     console.error("Login Error:", err);
                     showToast('Network error! Check URL.', 'error');
