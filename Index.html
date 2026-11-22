@@ -822,6 +822,7 @@
         }
 
         let lastSyncedHash = '';
+        let syncVersion = 0;
 
         async function syncData(silent = false) {
             if(!GOOGLE_APP_SCRIPT_URL) {
@@ -832,6 +833,7 @@
             const loggedInUser = sessionStorage.getItem('mirzakhilUser');
             if (!loggedInUser) return;
             const userObj = JSON.parse(loggedInUser);
+            const mySyncVersion = syncVersion;
 
             if(!silent) refreshIcon.classList.add('animate-spin');
             
@@ -842,6 +844,10 @@
                 });
                 const result = await response.json();
                 
+                if (silent && mySyncVersion !== syncVersion) {
+                    return; // Ignore stale background sync if a newer local action occurred
+                }
+
                 if (result && result.status === 'success') {
                     const data = result.data;
                     const newSavings = processSheetData(data.savings || []).reverse();
@@ -1165,13 +1171,32 @@
                     tr.title = isClosed ? "Click to view details" : "Click to close this account";
                     tr.onclick = () => { openCloseAccountModal(acc.id); };
                     
-                    let remainingMonths = acc.totalMonths - acc.monthsPaid;
-                    let years = Math.floor(remainingMonths / 12);
-                    let months = remainingMonths % 12;
                     let remainingText = '';
-                    if(years > 0) remainingText += `${years} Year${years>1?'s':''} `;
-                    if(months > 0 || remainingMonths === 0) remainingText += `${months} Month${months!==1?'s':''}`;
-                    if(isClosed) remainingText = '-';
+                    if (isClosed) {
+                        remainingText = '-';
+                    } else if (type === 'FDR') {
+                        let totalM = parseInt(acc.totalMonths) || 0;
+                        if (totalM > 0) {
+                            let openD = parseActionDate(acc.openDate);
+                            let today = new Date(); today.setHours(0,0,0,0);
+                            let matDate = safeAddMonths(openD, totalM);
+                            let completedCycles = 0;
+                            while (matDate <= today) {
+                                completedCycles++;
+                                matDate = safeAddMonths(matDate, totalM);
+                            }
+                            let daysRemaining = Math.ceil((matDate - today) / 86400000);
+                            remainingText = `${completedCycles} - ${daysRemaining}Day`;
+                        } else {
+                            remainingText = 'N/A';
+                        }
+                    } else {
+                        let remainingMonths = acc.totalMonths - acc.monthsPaid;
+                        let years = Math.floor(remainingMonths / 12);
+                        let months = remainingMonths % 12;
+                        if(years > 0) remainingText += `${years} Year${years>1?'s':''} `;
+                        if(months > 0 || remainingMonths === 0) remainingText += `${months} Month${months!==1?'s':''}`;
+                    }
                     
                     let statusText = isClosed ? `Close - ${acc.closeDate}` : (type === 'DPS' ? `Active (${acc.monthsPaid} Months Paid)` : `Active`);
                     let statusBadge = isClosed ? `bg-gray-200 text-gray-700` : `bg-green-100 text-green-800`;
@@ -1541,6 +1566,7 @@
             if (currentActionAccount) {
                 let acc = fdrDpsAccounts.find(a => String(a.id) === String(currentActionAccount.id));
                 if(acc) {
+                    syncVersion++;
                     if (acc.type === 'DPS') acc.monthsPaid = (parseInt(acc.monthsPaid) || 0) + 1;
                     if (acc.type === 'FDR') {
                         acc.status = 'Closed';
@@ -1549,7 +1575,6 @@
                     }
                     acc.isPending = false;
                     saveToLocal("fdrDps", fdrDpsAccounts);
-                    sendToGoogleSheet(acc, acc.type.toLowerCase(), 'update');
                     renderAlerts();
                     updateDashboardUI();
                     showToast(acc.type === 'FDR' ? 'FDR closed successfully!' : 'Payment confirmed & action complete!', 'success');
@@ -1557,6 +1582,10 @@
                     if (!document.getElementById('accountListView').classList.contains('hidden') && (document.getElementById('accountListTitle').textContent === 'DPS' || document.getElementById('accountListTitle').textContent === 'FDR')) {
                         renderTableData(document.getElementById('accountListTitle').textContent);
                     }
+
+                    sendToGoogleSheet(acc, acc.type.toLowerCase(), 'update').then((isSaved) => {
+                        if (isSaved) syncData(true);
+                    });
                 }
             }
             closeConfirmModal();
@@ -1612,6 +1641,7 @@
                 cc.deliveryDate = todayStr;
             }
 
+            syncVersion++;
             saveToLocal('chequecard', chequeCardItems);
             
             let sheetPayload = {...cc};
@@ -1807,6 +1837,7 @@
             if(accountToClose) {
                 let acc = fdrDpsAccounts.find(a => String(a.id) === String(accountToClose.id));
                 if (acc) {
+                    syncVersion++;
                     acc.status = 'Closed';
                     let closeDateVal = document.getElementById('caCloseDate').value;
                     let parts = closeDateVal.split('-');
@@ -2130,7 +2161,7 @@
             else if (type === 'cdsnd') cdSndAccounts.unshift(localAcc);
             else if (type === 'fdr') fdrDpsAccounts.unshift({...localAcc, type: 'FDR', status: 'Active'});
             else if (type === 'dps') fdrDpsAccounts.unshift({...localAcc, type: 'DPS', status: 'Active'});
-
+            syncVersion++;
             // Handle Auto-Requisition Generation for Cheque/Card
             let reqVal = document.getElementById('naRequisition').value;
             let createdReqs = [];
