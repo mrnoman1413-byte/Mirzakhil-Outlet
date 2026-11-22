@@ -821,6 +821,8 @@
             }
         }
 
+        let lastSyncedHash = '';
+
         async function syncData(silent = false) {
             if(!GOOGLE_APP_SCRIPT_URL) {
                 if(!silent) showToast('Please add Google Script URL in code first!', 'error');
@@ -842,13 +844,25 @@
                 
                 if (result && result.status === 'success') {
                     const data = result.data;
-                    savingsAccounts = processSheetData(data.savings || []).reverse();
-                    cdSndAccounts = processSheetData(data.cdsnd || []).reverse();
-                    fdrDpsAccounts = [
+                    const newSavings = processSheetData(data.savings || []).reverse();
+                    const newCdSnd = processSheetData(data.cdsnd || []).reverse();
+                    const newFdrDps = [
                         ...processSheetData(data.fdr || [], 'FDR'),
                         ...processSheetData(data.dps || [], 'DPS')
                     ].reverse(); 
-                    chequeCardItems = processCcData(data.chequecard || []).reverse();
+                    const newChequeCard = processCcData(data.chequecard || []).reverse();
+
+                    // Check if data actually changed during silent background sync
+                    const currentHash = JSON.stringify({ newSavings, newCdSnd, newFdrDps, newChequeCard });
+                    if (silent && lastSyncedHash === currentHash) {
+                        return; // No changes on server, skip DOM refresh to avoid interrupting user
+                    }
+                    lastSyncedHash = currentHash;
+
+                    savingsAccounts = newSavings;
+                    cdSndAccounts = newCdSnd;
+                    fdrDpsAccounts = newFdrDps;
+                    chequeCardItems = newChequeCard;
 
                     // Safely attempt to save to IndexedDB
                     saveToLocal("savings", savingsAccounts);
@@ -856,10 +870,25 @@
                     saveToLocal("fdrDps", fdrDpsAccounts);
                     saveToLocal("chequecard", chequeCardItems);
 
+                    // Preserve current scroll positions before updating UI
+                    const winScrollY = window.scrollY;
+                    const alertsScrollTop = alertsContainer ? alertsContainer.scrollTop : 0;
+
                     updateDashboardUI();
                     renderAlerts();
+                    if (alertsContainer) alertsContainer.scrollTop = alertsScrollTop;
                     
-                    if (!document.getElementById('accountListView').classList.contains('hidden')) renderTableData(document.getElementById('accountListTitle').textContent);
+                    if (!document.getElementById('accountListView').classList.contains('hidden')) {
+                        renderTableData(document.getElementById('accountListTitle').textContent);
+                        // Re-apply active search filter so user's search is never wiped out
+                        if (searchInput && searchInput.value.trim() !== '') {
+                            filterTable(searchInput.value);
+                        }
+                    }
+
+                    if (silent) {
+                        window.scrollTo(0, winScrollY);
+                    }
                     if(!silent) showToast('Data synced successfully!', 'success');
                 } else if (result && result.status === 'unauthorized') {
                     showToast('Session expired. Please login again.', 'error');
@@ -2190,7 +2219,7 @@
             } catch (e) { console.error("Local DB Init failed", e); }
             
             syncData(true);
-            setInterval(() => syncData(true), 30000);
+            setInterval(() => syncData(true), 300000);
         }
 
         // --- Login System Logic ---
