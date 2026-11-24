@@ -388,6 +388,10 @@
                 <div class="flex justify-between"><span class="font-medium text-gray-500">Item:</span> <span id="ccModalItem" class="font-bold text-purple-700"></span></div>
                 <div class="flex justify-between"><span class="font-medium text-gray-500">Customer Name:</span> <span id="ccModalName" class="font-bold text-gray-900"></span></div>
                 <div class="flex justify-between"><span class="font-medium text-gray-500">Account No:</span> <span id="ccModalAc" class="font-bold text-gray-900"></span></div>
+                <div id="ccModalMobileRow" class="hidden flex justify-between items-center bg-blue-50 p-2 rounded-md border border-blue-100">
+                    <span class="font-medium text-blue-800">Mobile No:</span> 
+                    <span id="ccModalMobile" class="font-bold text-blue-600 text-base tracking-wide"></span>
+                </div>
                 <div class="flex justify-between items-center mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
                     <span class="font-medium text-gray-600">Update Status To:</span> 
                     <span id="ccModalNextStatus" class="font-bold text-purple-700 text-base text-right"></span>
@@ -672,10 +676,14 @@
         // Helper to format ISO dates from Google Sheets to DD-MM-YYYY
         const formatIsoDate = (dateString) => {
             if (!dateString) return '';
-            let str = String(dateString).trim();
+            let str = String(dateString).replace(/^'/, '').trim();
             if (str.includes('T') && str.endsWith('Z')) {
                 const d = new Date(str);
                 return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+            }
+            if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(str)) {
+                let parts = str.split(/[-\/]/);
+                return `${String(parseInt(parts[2], 10)).padStart(2, '0')}-${String(parseInt(parts[1], 10)).padStart(2, '0')}-${parts[0]}`;
             }
             if (/^\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}$/.test(str)) {
                 let parts = str.split(/[-\/]/);
@@ -1119,7 +1127,7 @@
                     tr.innerHTML = `
                         <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${i + 1}</td>
                         <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900">${acc.reqDate}</td>
-                        <td class="px-2 py-3 whitespace-nowrap text-sm font-bold text-purple-600">${acc.itemType}</td>
+                        <td class="px-2 py-3 whitespace-nowrap text-sm font-bold ${String(acc.itemType).toLowerCase() === 'card' ? 'text-ucbred' : 'text-purple-600'}">${acc.itemType}</td>
                         <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">${acc.customer}</td>
                         <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">${acc.acNumber}</td>
                         <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">${acc.details}</td>
@@ -1383,10 +1391,12 @@
                 // Render Cheque/Card specific card
                 if (account.alertType === 'chequecard') {
                     let btnText = account.status === 'Courier Pending' ? 'Courier Recv' : 'Deliver to Cust.';
+                    let isCard = String(account.itemType).toLowerCase() === 'card';
+                    let badgeStyle = isCard ? 'bg-red-100 text-ucbred' : 'bg-purple-100 text-purple-700';
                     card = `
                         <div class="action-card flex items-start p-3 rounded-lg border transition bg-purple-50 border-purple-100 hover:border-purple-200">
                             <div class="flex-shrink-0 mt-1">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs bg-purple-100 text-purple-700">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${badgeStyle}">
                                     ${account.itemType === 'Cheque' ? 'CHQ' : 'CRD'}
                                 </div>
                             </div>
@@ -1611,6 +1621,16 @@
             document.getElementById('ccModalAc').textContent = cc.acNumber;
             document.getElementById('ccModalNextStatus').textContent = nextStatus;
 
+            const ccMobileRow = document.getElementById('ccModalMobileRow');
+            const ccMobileEl = document.getElementById('ccModalMobile');
+            if (cc.status === 'Delivery Pending') {
+                const matchedAcc = [...savingsAccounts, ...cdSndAccounts, ...fdrDpsAccounts].find(a => String(a.id) === String(cc.acNumber));
+                ccMobileEl.textContent = (matchedAcc && matchedAcc.mobile) ? matchedAcc.mobile : 'N/A';
+                ccMobileRow.classList.remove('hidden');
+            } else {
+                ccMobileRow.classList.add('hidden');
+            }
+
             ccConfirmModal.classList.remove('opacity-0', 'pointer-events-none');
             ccConfirmModalContent.classList.remove('scale-95');
             ccConfirmModalContent.classList.add('scale-100');
@@ -1646,6 +1666,9 @@
             
             let sheetPayload = {...cc};
             sheetPayload.acNumber = "'" + cc.acNumber; 
+            if (sheetPayload.reqDate) sheetPayload.reqDate = "'" + sheetPayload.reqDate;
+            if (sheetPayload.courierDate) sheetPayload.courierDate = "'" + sheetPayload.courierDate;
+            if (sheetPayload.deliveryDate) sheetPayload.deliveryDate = "'" + sheetPayload.deliveryDate;
             
             document.getElementById('cancelCcConfirmBtn').click(); 
             showToast('Status updated & saving to sheet...', 'info');
@@ -1943,7 +1966,7 @@
                 let reqId = Date.now().toString() + Math.floor(Math.random()*1000);
                 let sheetPayload = {
                     id: "'" + reqId, 
-                    reqDate: displayDate,
+                    reqDate: displayDate ? "'" + displayDate : '',
                     itemType: iType,
                     customer: cusName,
                     acNumber: "'" + acNum,
@@ -1952,7 +1975,7 @@
                     deliveryDate: '',
                     status: 'Courier Pending'
                 };
-                let localPayload = {...sheetPayload, id: reqId, acNumber: acNum};
+                let localPayload = {...sheetPayload, id: reqId, reqDate: displayDate, acNumber: acNum};
                 chequeCardItems.unshift(localPayload);
                 reqsToSave.push(sheetPayload);
             };
@@ -2171,7 +2194,7 @@
                     let reqId = Date.now().toString() + Math.floor(Math.random()*1000);
                     let sheetPayload = {
                         id: "'" + reqId,
-                        reqDate: displayDate,
+                        reqDate: displayDate ? "'" + displayDate : '',
                         itemType: itemType,
                         customer: document.getElementById('naName').value,
                         acNumber: "'" + document.getElementById('naNumber').value,
@@ -2180,7 +2203,7 @@
                         deliveryDate: '',
                         status: 'Courier Pending'
                     };
-                    let localPayload = {...sheetPayload, id: reqId, acNumber: document.getElementById('naNumber').value};
+                    let localPayload = {...sheetPayload, id: reqId, reqDate: displayDate, acNumber: document.getElementById('naNumber').value};
                     chequeCardItems.unshift(localPayload);
                     saveToLocal('chequecard', chequeCardItems);
                     createdReqs.push(sheetPayload);
